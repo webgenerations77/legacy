@@ -4,13 +4,14 @@ node_modules/
 .pnp.js
 
 # Environment / secrets
-.env
-.env*.local
+.env*
+!.env.example
 
 # Next.js
 /.next/
 /out/
 next-env.d.ts
+*.tsbuildinfo
 
 # Production
 /build
