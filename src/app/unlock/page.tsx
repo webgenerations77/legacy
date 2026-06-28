@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api-client";
+import { BrandHeader } from "@/components/Logo";
 import { useKey } from "@/app/providers/KeyProvider";
 import { deriveMasterKey, deriveAuthVerifier } from "@/lib/crypto";
 
@@ -38,6 +39,7 @@ export default function UnlockPage() {
   return (
     <main className="center">
       <form className="card" onSubmit={onSubmit}>
+        <BrandHeader />
         <h1>Welcome back</h1>
         <p className="subtle">Enter your passphrase to unlock your vault.</p>
         <label htmlFor="email">Email</label>

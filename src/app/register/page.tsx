@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api-client";
+import { BrandHeader } from "@/components/Logo";
 import { generateSalt, deriveMasterKey, deriveAuthVerifier } from "@/lib/crypto";
 
 export default function RegisterPage() {
@@ -33,8 +34,9 @@ export default function RegisterPage() {
   return (
     <main className="center">
       <form className="card" onSubmit={onSubmit}>
+        <BrandHeader />
         <h1>Create your Legacy</h1>
-        <p className="subtle">Your passphrase encrypts everything. We never see it.</p>
+        <p className="subtle">Your passphrase encrypts everything on your device. We never see it.</p>
         <label htmlFor="email">Email</label>
         <input id="email" type="email" value={email}
           onChange={(e) => setEmail(e.target.value)} required />
