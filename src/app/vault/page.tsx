@@ -35,7 +35,9 @@ export default function VaultPage() {
       router.replace("/unlock");
       return;
     }
-    load();
+    load().catch(() =>
+      setError("We couldn't load your vault. Please try unlocking again."),
+    );
   }, [masterKey, load, router]);
 
   async function onAdd(e: React.FormEvent) {
@@ -53,7 +55,11 @@ export default function VaultPage() {
   }
 
   async function onLogout() {
-    await api.logout();
+    try {
+      await api.logout();
+    } catch {
+      // best-effort: always clear the in-memory key and leave the vault
+    }
     setMasterKey(null);
     router.replace("/unlock");
   }
