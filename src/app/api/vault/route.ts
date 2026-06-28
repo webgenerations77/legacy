@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/auth";
 import { SESSION_COOKIE } from "@/lib/session-cookie";
+import { readJsonBody } from "@/lib/http";
 
 async function requireUser(): Promise<string | null> {
   const sid = (await cookies()).get(SESSION_COOKIE)?.value;
@@ -23,7 +24,13 @@ export async function GET() {
 export async function POST(req: Request) {
   const userId = await requireUser();
   if (!userId) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  const { ciphertext, iv } = await req.json();
+
+  const body = await readJsonBody(req);
+  if (body instanceof NextResponse) return body;
+
+  const ciphertext = typeof body.ciphertext === "string" ? body.ciphertext : "";
+  const iv = typeof body.iv === "string" ? body.iv : "";
+
   if (!ciphertext || !iv) {
     return NextResponse.json({ error: "Missing fields." }, { status: 400 });
   }

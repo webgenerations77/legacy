@@ -1,7 +1,8 @@
+import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { sessionExpiry } from "@/lib/session-cookie";
 
-const SESSION_TTL_HOURS = Number(process.env.SESSION_TTL_HOURS ?? "12");
 const BCRYPT_ROUNDS = 12;
 
 export async function hashVerifier(authVerifier: string): Promise<string> {
@@ -16,9 +17,10 @@ export async function verifyVerifier(
 }
 
 export async function createSession(userId: string): Promise<string> {
-  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 3600 * 1000);
-  const session = await prisma.session.create({ data: { userId, expiresAt } });
-  return session.id;
+  const id = randomBytes(32).toString("base64url");
+  const expiresAt = sessionExpiry();
+  await prisma.session.create({ data: { id, userId, expiresAt } });
+  return id;
 }
 
 export async function getSessionUserId(

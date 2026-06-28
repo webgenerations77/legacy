@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hashVerifier } from "@/lib/auth";
+import { readJsonBody } from "@/lib/http";
 
 export async function POST(req: Request) {
-  const { email, salt, authVerifier } = await req.json();
+  const body = await readJsonBody(req);
+  if (body instanceof NextResponse) return body;
+
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const salt = typeof body.salt === "string" ? body.salt : "";
+  const authVerifier = typeof body.authVerifier === "string" ? body.authVerifier : "";
+
   if (!email || !salt || !authVerifier) {
     return NextResponse.json({ error: "Missing fields." }, { status: 400 });
   }
