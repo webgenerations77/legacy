@@ -3,6 +3,9 @@ const KEY_BYTES = 32; // 256-bit
 const IV_BYTES = 12; // 96-bit
 const SALT_BYTES = 16; // 128-bit
 
+/** A Uint8Array backed by a (non-shared) ArrayBuffer — what WebCrypto's BufferSource requires. */
+export type CryptoBytes = Uint8Array<ArrayBuffer>;
+
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
@@ -12,14 +15,14 @@ function bytesToB64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-function b64ToBytes(b64: string): Uint8Array {
+function b64ToBytes(b64: string): CryptoBytes {
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
 
-function randomBytes(n: number): Uint8Array {
+function randomBytes(n: number): CryptoBytes {
   const b = new Uint8Array(n);
   crypto.getRandomValues(b);
   return b;
@@ -32,7 +35,7 @@ export function generateSalt(): string {
 export async function deriveMasterKey(
   passphrase: string,
   saltB64: string,
-): Promise<Uint8Array> {
+): Promise<CryptoBytes> {
   const base = await crypto.subtle.importKey(
     "raw",
     enc.encode(passphrase),
@@ -54,7 +57,7 @@ export async function deriveMasterKey(
 }
 
 export async function deriveAuthVerifier(
-  masterKey: Uint8Array,
+  masterKey: CryptoBytes,
   passphrase: string,
 ): Promise<string> {
   const base = await crypto.subtle.importKey(
@@ -77,7 +80,7 @@ export async function deriveAuthVerifier(
   return bytesToB64(new Uint8Array(bits));
 }
 
-async function importAesKey(masterKey: Uint8Array): Promise<CryptoKey> {
+async function importAesKey(masterKey: CryptoBytes): Promise<CryptoKey> {
   return crypto.subtle.importKey("raw", masterKey, "AES-GCM", false, [
     "encrypt",
     "decrypt",
@@ -85,7 +88,7 @@ async function importAesKey(masterKey: Uint8Array): Promise<CryptoKey> {
 }
 
 export async function encryptItem(
-  masterKey: Uint8Array,
+  masterKey: CryptoBytes,
   plaintext: string,
 ): Promise<{ ciphertext: string; iv: string }> {
   const key = await importAesKey(masterKey);
@@ -99,7 +102,7 @@ export async function encryptItem(
 }
 
 export async function decryptItem(
-  masterKey: Uint8Array,
+  masterKey: CryptoBytes,
   ciphertext: string,
   iv: string,
 ): Promise<string> {
