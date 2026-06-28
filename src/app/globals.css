@@ -240,3 +240,48 @@ button:disabled {
 .navlinks a:hover {
   text-decoration: underline;
 }
+
+/* Forms: match inputs for select + textarea */
+select,
+textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--blue-200);
+  border-radius: var(--radius-input);
+  font-size: 1rem;
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--ink);
+}
+textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--blue-100);
+  background: #fff;
+}
+
+/* Account card details */
+.item strong {
+  display: block;
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 1.05rem;
+}
+.item .meta {
+  font-family: var(--font-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.item .notes {
+  margin-top: 6px;
+  font-size: 0.92rem;
+  color: var(--slate);
+}
