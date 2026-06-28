@@ -217,3 +217,26 @@ button:disabled {
   width: auto;
   padding: 11px 18px;
 }
+
+/* App navigation */
+.appnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--blue-200);
+}
+.navlinks {
+  display: flex;
+  gap: 16px;
+}
+.navlinks a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+.navlinks a:hover {
+  text-decoration: underline;
+}

@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { LegacyMark } from "@/components/Logo";
 import { useKey } from "@/app/providers/KeyProvider";
+import { AppNav } from "@/components/AppNav";
 import { encryptItem, decryptItem } from "@/lib/crypto";
 
 export default function VaultPage() {
   const router = useRouter();
-  const { masterKey, setMasterKey } = useKey();
+  const { masterKey } = useKey();
   const [items, setItems] = useState<{ id: string; text: string }[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
@@ -55,21 +56,12 @@ export default function VaultPage() {
     }
   }
 
-  async function onLogout() {
-    try {
-      await api.logout();
-    } catch {
-      // best-effort: always clear the in-memory key and leave the vault
-    }
-    setMasterKey(null);
-    router.replace("/unlock");
-  }
-
   if (!masterKey) return null;
 
   return (
     <main className="center">
       <div className="card">
+        <AppNav />
         <div className="brand">
           <LegacyMark size={44} />
         </div>
@@ -85,7 +77,7 @@ export default function VaultPage() {
         {items.map((it) => (
           <div className="item" key={it.id}>{it.text}</div>
         ))}
-        <p className="link"><button type="button" className="linkbtn" onClick={onLogout}>Lock &amp; sign out</button></p>
+
       </div>
     </main>
   );
