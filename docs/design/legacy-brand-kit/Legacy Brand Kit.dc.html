@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Hanken+Grotesk:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="design_doc_mode" content="canvas">
+<style>
+  :root{
+    --paper:#faf8f4; --cream:#f4f1ec; --ink:#33414f; --slate:#3a4a5a;
+    --accent:#5b7a99; --accent-deep:#39495b;
+    --blue-100:#e9eef2; --blue-200:#d4dee6; --blue-300:#a9bcc9;
+    --tan:#b8a890; --tan-200:#e3dacb;
+    --muted:#8492a0; --alert:#b5654f;
+  }
+  *{ box-sizing:border-box; }
+  .lbl{ font-family:'Spline Sans Mono',monospace; font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 12px 2px; }
+  .card{ background:#fff; border-radius:4px; box-shadow:0 1px 2px rgba(40,55,70,.07), 0 14px 38px rgba(40,55,70,.06); overflow:hidden; }
+  .ctr{ display:flex; align-items:center; justify-content:center; }
+</style>
+</helmet>
+
+<!-- ===== TITLE ===== -->
+<div style="position:absolute; left:140px; top:64px; width:1140px;" data-drags-parent="1">
+  <div style="font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.24em; text-transform:uppercase; color:var(--muted); margin-bottom:18px;">Brand &amp; Graphics System</div>
+  <div style="display:flex; align-items:flex-end; gap:26px;">
+    <svg width="76" height="76" viewBox="0 0 120 120" fill="none">
+      <circle cx="60" cy="60" r="52" stroke="var(--accent)" stroke-opacity=".22" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="39" stroke="var(--accent)" stroke-opacity=".5" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="26" stroke="var(--accent)" stroke-opacity=".85" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="12.5" fill="var(--tan)"/>
+    </svg>
+    <div style="font-family:'Newsreader',serif; font-weight:500; font-size:72px; line-height:.9; letter-spacing:-.015em; color:var(--ink);">Legacy</div>
+  </div>
+  <div style="font-family:'Newsreader',serif; font-style:italic; font-size:24px; color:var(--slate); opacity:.78; margin-top:22px;">Everything in its place — for the people you love.</div>
+</div>
+
+<!-- ===== SECTION: LOGO ===== -->
+<div style="position:absolute; left:140px; top:336px; width:600px;" data-drags-parent="1">
+  <div style="font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent); ">01 — Logo</div>
+</div>
+
+<!-- primary lockup light -->
+<div style="position:absolute; left:140px; top:382px; width:560px;">
+  <p class="lbl" data-drags-parent="1">Primary lockup</p>
+  <div class="card ctr" style="height:340px; gap:30px; background:var(--paper);">
+    <svg width="96" height="96" viewBox="0 0 120 120" fill="none">
+      <circle cx="60" cy="60" r="52" stroke="var(--accent)" stroke-opacity=".22" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="39" stroke="var(--accent)" stroke-opacity=".5" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="26" stroke="var(--accent)" stroke-opacity=".85" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="12.5" fill="var(--tan)"/>
+    </svg>
+    <div style="font-family:'Newsreader',serif; font-weight:500; font-size:64px; letter-spacing:-.015em; color:var(--ink);">Legacy</div>
+  </div>
+</div>
+
+<!-- lockup dark -->
+<div style="position:absolute; left:740px; top:382px; width:560px;">
+  <p class="lbl" data-drags-parent="1">Reversed / on dark</p>
+  <div class="card ctr" style="height:340px; gap:30px; background:var(--accent-deep);">
+    <svg width="96" height="96" viewBox="0 0 120 120" fill="none">
+      <circle cx="60" cy="60" r="52" stroke="#ffffff" stroke-opacity=".26" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="39" stroke="#ffffff" stroke-opacity=".55" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="26" stroke="#ffffff" stroke-opacity=".92" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="12.5" fill="var(--tan)"/>
+    </svg>
+    <div style="font-family:'Newsreader',serif; font-weight:500; font-size:64px; letter-spacing:-.015em; color:#fdfcfa;">Legacy</div>
+  </div>
+</div>
+
+<!-- stacked -->
+<div style="position:absolute; left:1340px; top:382px; width:420px;">
+  <p class="lbl" data-drags-parent="1">Stacked</p>
+  <div class="card" style="height:340px; background:var(--paper); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;">
+    <svg width="88" height="88" viewBox="0 0 120 120" fill="none">
+      <circle cx="60" cy="60" r="52" stroke="var(--accent)" stroke-opacity=".22" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="39" stroke="var(--accent)" stroke-opacity=".5" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="26" stroke="var(--accent)" stroke-opacity=".85" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="12.5" fill="var(--tan)"/>
+    </svg>
+    <div style="font-family:'Newsreader',serif; font-weight:500; font-size:46px; letter-spacing:-.015em; color:var(--ink);">Legacy</div>
+    <div style="font-family:'Spline Sans Mono',monospace; font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:var(--muted);">Plan&nbsp;·&nbsp;Protect&nbsp;·&nbsp;Pass on</div>
+  </div>
+</div>
+
+<!-- mark + clearspace -->
+<div style="position:absolute; left:1800px; top:382px; width:480px;">
+  <p class="lbl" data-drags-parent="1">Symbol &amp; clearspace</p>
+  <div class="card" style="height:340px; background:var(--paper); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px; padding:24px;">
+    <div style="position:relative; padding:26px; border:1.5px dashed var(--blue-300); border-radius:8px;">
+      <svg width="104" height="104" viewBox="0 0 120 120" fill="none">
+        <circle cx="60" cy="60" r="52" stroke="var(--accent)" stroke-opacity=".22" stroke-width="2.5"/>
+        <circle cx="60" cy="60" r="39" stroke="var(--accent)" stroke-opacity=".5" stroke-width="2.5"/>
+        <circle cx="60" cy="60" r="26" stroke="var(--accent)" stroke-opacity=".85" stroke-width="2.5"/>
+        <circle cx="60" cy="60" r="12.5" fill="var(--tan)"/>
+      </svg>
+    </div>
+    <div style="display:flex; align-items:flex-end; gap:24px;">
+      <svg width="48" height="48" viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="52" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3"/><circle cx="60" cy="60" r="39" stroke="var(--accent)" stroke-opacity=".5" stroke-width="3"/><circle cx="60" cy="60" r="26" stroke="var(--accent)" stroke-opacity=".85" stroke-width="3"/><circle cx="60" cy="60" r="12.5" fill="var(--tan)"/></svg>
+      <svg width="30" height="30" viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="52" stroke="var(--accent)" stroke-opacity=".22" stroke-width="4"/><circle cx="60" cy="60" r="39" stroke="var(--accent)" stroke-opacity=".5" stroke-width="4"/><circle cx="60" cy="60" r="26" stroke="var(--accent)" stroke-opacity=".85" stroke-width="4"/><circle cx="60" cy="60" r="12.5" fill="var(--tan)"/></svg>
+      <svg width="18" height="18" viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="44" stroke="var(--accent)" stroke-opacity=".45" stroke-width="6"/><circle cx="60" cy="60" r="16" fill="var(--tan)"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION: APP ICON ===== -->
+<div style="position:absolute; left:140px; top:806px; width:600px;" data-drags-parent="1">
+  <div style="font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent);">02 — App icon</div>
+</div>
+
+<!-- color icon -->
+<div style="position:absolute; left:140px; top:852px; width:260px;">
+  <p class="lbl" data-drags-parent="1">Full color</p>
+  <div class="card ctr" style="height:300px; background:var(--cream);">
+    <div style="width:184px; height:184px; border-radius:42px; background:linear-gradient(155deg, var(--accent), var(--accent-deep)); box-shadow:0 12px 26px rgba(57,73,91,.28); display:flex; align-items:center; justify-content:center;">
+      <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+        <circle cx="60" cy="60" r="50" stroke="#ffffff" stroke-opacity=".28" stroke-width="3"/>
+        <circle cx="60" cy="60" r="37" stroke="#ffffff" stroke-opacity=".58" stroke-width="3"/>
+        <circle cx="60" cy="60" r="24" stroke="#ffffff" stroke-opacity=".95" stroke-width="3"/>
+        <circle cx="60" cy="60" r="11.5" fill="var(--tan)"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- dark icon -->
+<div style="position:absolute; left:420px; top:852px; width:260px;">
+  <p class="lbl" data-drags-parent="1">Dark</p>
+  <div class="card ctr" style="height:300px; background:var(--cream);">
+    <div style="width:184px; height:184px; border-radius:42px; background:linear-gradient(155deg,#2c3947,#1d2630); box-shadow:0 12px 26px rgba(20,28,36,.32); display:flex; align-items:center; justify-content:center;">
+      <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+        <circle cx="60" cy="60" r="50" stroke="var(--accent)" stroke-opacity=".35" stroke-width="3"/>
+        <circle cx="60" cy="60" r="37" stroke="var(--accent)" stroke-opacity=".65" stroke-width="3"/>
+        <circle cx="60" cy="60" r="24" stroke="var(--blue-300)" stroke-width="3"/>
+        <circle cx="60" cy="60" r="11.5" fill="var(--tan)"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- mono icon -->
+<div style="position:absolute; left:700px; top:852px; width:260px;">
+  <p class="lbl" data-drags-parent="1">Monochrome</p>
+  <div class="card ctr" style="height:300px; background:var(--cream);">
+    <div style="width:184px; height:184px; border-radius:42px; background:var(--ink); display:flex; align-items:center; justify-content:center;">
+      <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+        <circle cx="60" cy="60" r="50" stroke="#ffffff" stroke-opacity=".3" stroke-width="3"/>
+        <circle cx="60" cy="60" r="37" stroke="#ffffff" stroke-opacity=".6" stroke-width="3"/>
+        <circle cx="60" cy="60" r="24" stroke="#ffffff" stroke-opacity=".92" stroke-width="3"/>
+        <circle cx="60" cy="60" r="11.5" fill="#ffffff"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- tinted icon -->
+<div style="position:absolute; left:980px; top:852px; width:260px;">
+  <p class="lbl" data-drags-parent="1">Light tint</p>
+  <div class="card ctr" style="height:300px; background:var(--cream);">
+    <div style="width:184px; height:184px; border-radius:42px; background:linear-gradient(155deg,#ffffff,var(--blue-100)); border:1px solid var(--blue-200); box-shadow:0 12px 26px rgba(57,73,91,.12); display:flex; align-items:center; justify-content:center;">
+      <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+        <circle cx="60" cy="60" r="50" stroke="var(--accent)" stroke-opacity=".25" stroke-width="3"/>
+        <circle cx="60" cy="60" r="37" stroke="var(--accent)" stroke-opacity=".55" stroke-width="3"/>
+        <circle cx="60" cy="60" r="24" stroke="var(--accent)" stroke-opacity=".9" stroke-width="3"/>
+        <circle cx="60" cy="60" r="11.5" fill="var(--tan)"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- corner radius spec -->
+<div style="position:absolute; left:1260px; top:852px; width:320px;">
+  <p class="lbl" data-drags-parent="1">Construction</p>
+  <div class="card" style="height:300px; background:var(--paper); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;">
+    <div style="position:relative; width:160px; height:160px;">
+      <div style="position:absolute; inset:0; border-radius:36px; background:linear-gradient(155deg, var(--accent), var(--accent-deep));"></div>
+      <div style="position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(58,74,90,.18);"></div>
+      <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:rgba(58,74,90,.18);"></div>
+      <div style="position:absolute; inset:18px; border:1px dashed rgba(255,255,255,.45); border-radius:24px;"></div>
+    </div>
+    <div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--slate); text-align:center; line-height:1.8;">RADIUS 22.4%<br/>GRID 12 · INSET 10%</div>
+  </div>
+</div>
+
+<!-- ===== SECTION: COLOR ===== -->
+<div style="position:absolute; left:140px; top:1248px; width:600px;" data-drags-parent="1">
+  <div style="font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent);">03 — Color</div>
+</div>
+
+<div style="position:absolute; left:140px; top:1294px; width:1100px;">
+  <p class="lbl" data-drags-parent="1">Palette</p>
+  <div class="card" style="background:#fff; padding:34px;">
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:18px;">
+      <div><div style="height:78px; border-radius:6px; background:var(--paper); border:1px solid #ece7df;"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Paper</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#FAF8F4</div></div>
+      <div><div style="height:78px; border-radius:6px; background:var(--cream); border:1px solid #e8e2d8;"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Cream</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#F4F1EC</div></div>
+      <div><div style="height:78px; border-radius:6px; background:var(--blue-100);"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Mist</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#E9EEF2</div></div>
+      <div><div style="height:78px; border-radius:6px; background:var(--blue-300);"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Sky</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#A9BCC9</div></div>
+      <div><div style="height:78px; border-radius:6px; background:var(--accent);"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Accent blue</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#5B7A99</div></div>
+      <div><div style="height:78px; border-radius:6px; background:var(--accent-deep);"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Deep slate</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#39495B</div></div>
+      <div><div style="height:78px; border-radius:6px; background:var(--tan);"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Warm tan</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#B8A890</div></div>
+      <div><div style="height:78px; border-radius:6px; background:var(--tan-200);"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Sand</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#E3DACB</div></div>
+      <div><div style="height:78px; border-radius:6px; background:var(--ink);"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Ink</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#33414F</div></div>
+      <div><div style="height:78px; border-radius:6px; background:var(--alert);"></div><div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--ink); margin-top:10px;">Alert</div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; color:var(--muted);">#B5654F</div></div>
+    </div>
+    <div style="font-family:'Hanken Grotesk',sans-serif; font-size:13px; color:var(--slate); opacity:.75; margin-top:24px; line-height:1.6;">Soft neutrals lead; subtle blue carries actions and identity; warm tan is the human accent. The muted terracotta alert appears only when something truly needs attention — never as decoration.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION: TYPE ===== -->
+<div style="position:absolute; left:1280px; top:1248px; width:600px;" data-drags-parent="1">
+  <div style="font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent);">04 — Type</div>
+</div>
+
+<div style="position:absolute; left:1280px; top:1294px; width:700px;">
+  <p class="lbl" data-drags-parent="1">Typography</p>
+  <div class="card" style="background:#fff; padding:36px; display:flex; flex-direction:column; gap:26px;">
+    <div style="display:flex; align-items:baseline; justify-content:space-between; gap:20px; border-bottom:1px solid #efece6; padding-bottom:22px;">
+      <div style="font-family:'Newsreader',serif; font-weight:500; font-size:70px; line-height:.9; color:var(--ink);">Aa</div>
+      <div style="text-align:right;">
+        <div style="font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted);">Display · Newsreader</div>
+        <div style="font-family:'Newsreader',serif; font-style:italic; font-size:22px; color:var(--slate); margin-top:6px;">Warm, timeless, trustworthy</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:12px;">Text · Hanken Grotesk</div>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-size:17px; line-height:1.65; color:var(--slate);">A calm, humanist sans for everyday guidance. It carries the conversational interface — clear, unhurried, and easy on the eye in the quietest of moments.</div>
+    </div>
+    <div style="display:flex; gap:40px;">
+      <div><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px;">Mono · Spline Sans</div><div style="font-family:'Spline Sans Mono',monospace; font-size:15px; color:var(--ink);">0123456789 · % · #</div></div>
+      <div style="flex:1;"><div style="font-family:'Spline Sans Mono',monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px;">Weights</div><div style="font-family:'Hanken Grotesk',sans-serif; font-size:15px; color:var(--ink);"><span style="font-weight:400;">Regular</span> · <span style="font-weight:500;">Medium</span> · <span style="font-weight:600;">Semibold</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION: BACKGROUNDS ===== -->
+<div style="position:absolute; left:140px; top:1700px; width:600px;" data-drags-parent="1">
+  <div style="font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent);">05 — Backgrounds &amp; textures</div>
+</div>
+
+<div style="position:absolute; left:140px; top:1746px; width:250px;">
+  <p class="lbl" data-drags-parent="1">Ripple</p>
+  <div class="card" style="height:240px; position:relative; background:repeating-radial-gradient(circle at 50% 36%, rgba(91,122,153,.12) 0 1.5px, transparent 1.5px 17px), var(--paper);">
+    <div style="position:absolute; left:14px; bottom:12px; font-family:'Spline Sans Mono',monospace; font-size:10px; color:var(--muted);">feed · empty states</div>
+  </div>
+</div>
+<div style="position:absolute; left:410px; top:1746px; width:250px;">
+  <p class="lbl" data-drags-parent="1">Soft mesh</p>
+  <div class="card" style="height:240px; position:relative; background:radial-gradient(at 18% 20%, rgba(91,122,153,.20), transparent 55%), radial-gradient(at 82% 26%, rgba(184,168,144,.24), transparent 55%), radial-gradient(at 50% 92%, rgba(169,188,201,.26), transparent 58%), var(--cream);">
+    <div style="position:absolute; left:14px; bottom:12px; font-family:'Spline Sans Mono',monospace; font-size:10px; color:var(--slate);">onboarding</div>
+  </div>
+</div>
+<div style="position:absolute; left:680px; top:1746px; width:250px;">
+  <p class="lbl" data-drags-parent="1">Calm wash</p>
+  <div class="card" style="height:240px; position:relative; background:linear-gradient(160deg, var(--paper), var(--blue-100));">
+    <div style="position:absolute; left:14px; bottom:12px; font-family:'Spline Sans Mono',monospace; font-size:10px; color:var(--muted);">screens · default</div>
+  </div>
+</div>
+<div style="position:absolute; left:950px; top:1746px; width:250px;">
+  <p class="lbl" data-drags-parent="1">Contour</p>
+  <div class="card" style="height:240px; position:relative; background:repeating-radial-gradient(circle at 72% 118%, transparent 0 22px, rgba(58,74,90,.07) 22px 23px), var(--cream);">
+    <div style="position:absolute; left:14px; bottom:12px; font-family:'Spline Sans Mono',monospace; font-size:10px; color:var(--slate);">vault · score</div>
+  </div>
+</div>
+<div style="position:absolute; left:1220px; top:1746px; width:250px;">
+  <p class="lbl" data-drags-parent="1">Brand wash</p>
+  <div class="card" style="height:240px; position:relative; background:linear-gradient(150deg, var(--accent), var(--accent-deep));">
+    <div style="position:absolute; left:14px; bottom:12px; font-family:'Spline Sans Mono',monospace; font-size:10px; color:rgba(255,255,255,.8);">headers · hero</div>
+  </div>
+</div>
+<div style="position:absolute; left:1490px; top:1746px; width:250px;">
+  <p class="lbl" data-drags-parent="1">Warm</p>
+  <div class="card" style="height:240px; position:relative; background:linear-gradient(160deg, var(--tan-200), var(--paper));">
+    <div style="position:absolute; left:14px; bottom:12px; font-family:'Spline Sans Mono',monospace; font-size:10px; color:var(--slate);">family · gentle</div>
+  </div>
+</div>
+
+<!-- ===== SECTION: ICONOGRAPHY ===== -->
+<div style="position:absolute; left:140px; top:2090px; width:600px;" data-drags-parent="1">
+  <div style="font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent);">06 — Iconography</div>
+</div>
+
+<div style="position:absolute; left:140px; top:2136px; width:1330px;">
+  <p class="lbl" data-drags-parent="1">Core screen icons · 1.75pt stroke, round caps</p>
+  <div class="card" style="background:#fff; padding:38px 30px; display:grid; grid-template-columns:repeat(5,1fr); gap:20px;">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:18px;">
+      <svg width="52" height="52" viewBox="0 0 48 48" fill="none" stroke="var(--slate)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 16a6 6 0 0 1 6-6h18a6 6 0 0 1 6 6v9a6 6 0 0 1-6 6H21l-8 6v-6a6 6 0 0 1-4-6z"/>
+        <path d="M17 19h14M17 25h9"/>
+      </svg>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:14px; color:var(--ink);">Home Feed</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:18px;">
+      <svg width="52" height="52" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="15" stroke="var(--blue-200)" stroke-width="3.5"/>
+        <path d="M24 9a15 15 0 0 1 13 22.5" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="24" cy="24" r="4" fill="var(--tan)"/>
+      </svg>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:14px; color:var(--ink);">Completion Score</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:18px;">
+      <svg width="52" height="52" viewBox="0 0 48 48" fill="none" stroke="var(--slate)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M24 7l14 5v9c0 9.5-6.2 15-14 18C16.2 36 10 30.5 10 21v-9z"/>
+        <circle cx="24" cy="22" r="3.5"/>
+        <path d="M24 25.5v5"/>
+      </svg>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:14px; color:var(--ink);">Vault</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:18px;">
+      <svg width="52" height="52" viewBox="0 0 48 48" fill="none" stroke="var(--slate)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="24" cy="13" r="5"/>
+        <circle cx="13" cy="30" r="4.5"/>
+        <circle cx="35" cy="30" r="4.5"/>
+        <path d="M21 17l-5 9M27 17l5 9M18 30h12"/>
+      </svg>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:14px; color:var(--ink);">Family Access</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:18px;">
+      <svg width="52" height="52" viewBox="0 0 48 48" fill="none" stroke="var(--slate)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="24" cy="24" r="16"/>
+        <path d="M24 12l3.5 9.5L37 24l-9.5 2.5L24 36l-3.5-9.5L11 24l9.5-2.5z" fill="var(--tan)" stroke="none"/>
+      </svg>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:14px; color:var(--ink);">Survivor Mode</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION: ILLUSTRATIONS ===== -->
+<div style="position:absolute; left:140px; top:2470px; width:600px;" data-drags-parent="1">
+  <div style="font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent);">07 — Empty-state illustrations</div>
+</div>
+
+<div style="position:absolute; left:140px; top:2516px; width:330px;">
+  <p class="lbl" data-drags-parent="1">Generations</p>
+  <div class="card ctr" style="height:300px; background:linear-gradient(160deg, var(--paper), var(--blue-100)); flex-direction:column; gap:24px; padding:24px;">
+    <svg width="150" height="150" viewBox="0 0 150 150" fill="none">
+      <circle cx="75" cy="75" r="60" stroke="var(--accent)" stroke-opacity=".18" stroke-width="2"/>
+      <circle cx="75" cy="75" r="42" stroke="var(--accent)" stroke-opacity=".3" stroke-width="2"/>
+      <circle cx="75" cy="75" r="24" stroke="var(--accent)" stroke-opacity=".45" stroke-width="2"/>
+      <circle cx="75" cy="75" r="9" fill="var(--tan)"/>
+      <circle cx="75" cy="15" r="6" fill="var(--accent)"/>
+      <circle cx="117" cy="75" r="6" fill="var(--accent)"/>
+      <circle cx="42" cy="117" r="6" fill="var(--accent)"/>
+      <circle cx="33" cy="51" r="5" fill="var(--tan)"/>
+    </svg>
+    <div style="font-family:'Newsreader',serif; font-style:italic; font-size:17px; color:var(--slate);">Everyone you carry forward</div>
+  </div>
+</div>
+<div style="position:absolute; left:510px; top:2516px; width:330px;">
+  <p class="lbl" data-drags-parent="1">Safe harbor</p>
+  <div class="card ctr" style="height:300px; background:linear-gradient(160deg, var(--tan-200), var(--paper)); flex-direction:column; gap:24px; padding:24px;">
+    <svg width="150" height="150" viewBox="0 0 150 150" fill="none" stroke="var(--slate)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="75" cy="62" r="40" fill="rgba(91,122,153,.10)" stroke="var(--accent)" stroke-opacity=".4"/>
+      <path d="M45 78V58l30-22 30 22v20"/>
+      <path d="M45 78h60"/>
+      <path d="M68 78v-14h14v14"/>
+    </svg>
+    <div style="font-family:'Newsreader',serif; font-style:italic; font-size:17px; color:var(--slate);">A home for what matters</div>
+  </div>
+</div>
+<div style="position:absolute; left:880px; top:2516px; width:330px;">
+  <p class="lbl" data-drags-parent="1">Guiding light</p>
+  <div class="card ctr" style="height:300px; background:linear-gradient(160deg, var(--paper), var(--blue-100)); flex-direction:column; gap:24px; padding:24px;">
+    <svg width="150" height="150" viewBox="0 0 150 150" fill="none" stroke="var(--slate)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M48 112V44a8 8 0 0 1 8-8h28v76" stroke="var(--accent)" stroke-opacity=".5"/>
+      <circle cx="92" cy="58" r="22" fill="rgba(184,168,144,.25)" stroke="var(--tan)"/>
+      <path d="M92 36v-8M114 58h8M108 42l5-5M108 74l5 5" stroke="var(--tan)"/>
+      <circle cx="78" cy="78" r="2.5" fill="var(--slate)" stroke="none"/>
+    </svg>
+    <div style="font-family:'Newsreader',serif; font-style:italic; font-size:17px; color:var(--slate);">A door, gently opened</div>
+  </div>
+</div>
+
+<!-- ===== SECTION: FEATURE CARDS ===== -->
+<div style="position:absolute; left:140px; top:2900px; width:700px;" data-drags-parent="1">
+  <div style="font-family:'Spline Sans Mono',monospace; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent);">08 — Feature spot graphics</div>
+</div>
+
+<div style="position:absolute; left:140px; top:2946px; width:236px;">
+  <div class="card" style="height:300px; background:linear-gradient(160deg, var(--accent), var(--accent-deep)); padding:26px; display:flex; flex-direction:column; justify-content:space-between;">
+    <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-opacity=".95" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 16a6 6 0 0 1 6-6h18a6 6 0 0 1 6 6v9a6 6 0 0 1-6 6H21l-8 6v-6a6 6 0 0 1-4-6z"/><path d="M17 19h14M17 25h9"/></svg>
+    <div>
+      <div style="font-family:'Newsreader',serif; font-size:26px; color:#fff; line-height:1.05;">Home Feed</div>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-size:13.5px; color:rgba(255,255,255,.8); margin-top:8px; line-height:1.5;">A calm daily check-in, one gentle step at a time.</div>
+    </div>
+  </div>
+</div>
+<div style="position:absolute; left:396px; top:2946px; width:236px;">
+  <div class="card" style="height:300px; background:linear-gradient(160deg,#4f6c87,#2f3d4c); padding:26px; display:flex; flex-direction:column; justify-content:space-between;">
+    <svg width="40" height="40" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="15" stroke="rgba(255,255,255,.3)" stroke-width="3.5"/><path d="M24 9a15 15 0 0 1 13 22.5" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><circle cx="24" cy="24" r="4" fill="var(--tan)"/></svg>
+    <div>
+      <div style="font-family:'Newsreader',serif; font-size:26px; color:#fff; line-height:1.05;">Completion Score</div>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-size:13.5px; color:rgba(255,255,255,.8); margin-top:8px; line-height:1.5;">See what's done — without any pressure.</div>
+    </div>
+  </div>
+</div>
+<div style="position:absolute; left:652px; top:2946px; width:236px;">
+  <div class="card" style="height:300px; background:linear-gradient(160deg,#3c4d5f,#222d39); padding:26px; display:flex; flex-direction:column; justify-content:space-between;">
+    <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 7l14 5v9c0 9.5-6.2 15-14 18C16.2 36 10 30.5 10 21v-9z"/><circle cx="24" cy="22" r="3.5"/><path d="M24 25.5v5"/></svg>
+    <div>
+      <div style="font-family:'Newsreader',serif; font-size:26px; color:#fff; line-height:1.05;">Vault</div>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-size:13.5px; color:rgba(255,255,255,.8); margin-top:8px; line-height:1.5;">Documents and wishes, kept safe and private.</div>
+    </div>
+  </div>
+</div>
+<div style="position:absolute; left:908px; top:2946px; width:236px;">
+  <div class="card" style="height:300px; background:linear-gradient(160deg, var(--tan), #8e7c63); padding:26px; display:flex; flex-direction:column; justify-content:space-between;">
+    <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="13" r="5"/><circle cx="13" cy="30" r="4.5"/><circle cx="35" cy="30" r="4.5"/><path d="M21 17l-5 9M27 17l5 9M18 30h12"/></svg>
+    <div>
+      <div style="font-family:'Newsreader',serif; font-size:26px; color:#fff; line-height:1.05;">Family Access</div>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-size:13.5px; color:rgba(255,255,255,.85); margin-top:8px; line-height:1.5;">Share the right things, when the time is right.</div>
+    </div>
+  </div>
+</div>
+<div style="position:absolute; left:1164px; top:2946px; width:236px;">
+  <div class="card" style="height:300px; background:linear-gradient(160deg,#5b7a99,#42566a); padding:26px; display:flex; flex-direction:column; justify-content:space-between;">
+    <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><path d="M24 12l3.5 9.5L37 24l-9.5 2.5L24 36l-3.5-9.5L11 24l9.5-2.5z" fill="var(--tan)" stroke="none"/></svg>
+    <div>
+      <div style="font-family:'Newsreader',serif; font-size:26px; color:#fff; line-height:1.05;">Survivor Mode</div>
+      <div style="font-family:'Hanken Grotesk',sans-serif; font-size:13.5px; color:rgba(255,255,255,.8); margin-top:8px; line-height:1.5;">Steady guidance for those left behind.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;accent&quot;: {&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#5b7a99&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#5b7a99&quot;,&quot;#6a8a7b&quot;,&quot;#7c93a8&quot;,&quot;#8b7e9c&quot;],&quot;section&quot;:&quot;Brand&quot;},
+  &quot;tan&quot;: {&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#b8a890&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#b8a890&quot;,&quot;#c9b79c&quot;,&quot;#cdb89f&quot;,&quot;#bdae9a&quot;],&quot;section&quot;:&quot;Brand&quot;},
+  &quot;ink&quot;: {&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#33414f&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#33414f&quot;,&quot;#2f3e4d&quot;,&quot;#3a4a5a&quot;,&quot;#2b3640&quot;],&quot;section&quot;:&quot;Brand&quot;}
+}">
+class Component extends DCLogic {
+  componentDidMount(){ this.applyTheme(); }
+  componentDidUpdate(){ this.applyTheme(); }
+  applyTheme(){
+    const r = document.documentElement.style;
+    const p = this.props || {};
+    if(p.accent){ r.setProperty('--accent', p.accent); }
+    if(p.tan){ r.setProperty('--tan', p.tan); }
+    if(p.ink){ r.setProperty('--ink', p.ink); }
+  }
+  renderVals(){ return {}; }
+}
+</script>
+</body>
+</html>

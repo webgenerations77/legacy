@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
+import { LegacyMark } from "@/components/Logo";
 import { useKey } from "@/app/providers/KeyProvider";
 import { encryptItem, decryptItem } from "@/lib/crypto";
 
@@ -22,7 +23,7 @@ export default function VaultPage() {
         try {
           return { id: it.id, text: await decryptItem(masterKey, it.ciphertext, it.iv) };
         } catch {
-          return { id: it.id, text: "⚠ We couldn't unlock this item." };
+          return { id: it.id, text: "We couldn't unlock this item." };
         }
       }),
     );
@@ -69,6 +70,9 @@ export default function VaultPage() {
   return (
     <main className="center">
       <div className="card">
+        <div className="brand">
+          <LegacyMark size={44} />
+        </div>
         <h1>Your Vault</h1>
         <p className="subtle">Everything here is encrypted on your device.</p>
         <form className="row" onSubmit={onAdd}>
@@ -81,7 +85,7 @@ export default function VaultPage() {
         {items.map((it) => (
           <div className="item" key={it.id}>{it.text}</div>
         ))}
-        <p className="link"><a onClick={onLogout} style={{ cursor: "pointer" }}>Lock & sign out</a></p>
+        <p className="link"><button type="button" className="linkbtn" onClick={onLogout}>Lock &amp; sign out</button></p>
       </div>
     </main>
   );
