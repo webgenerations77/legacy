@@ -38,7 +38,7 @@ export default function ReadinessPage() {
         {loading && <p className="subtle">Calculating…</p>}
         {error && <p className="error">{error}</p>}
 
-        {!loading && (
+        {!loading && !error && (
           <>
             <div className="score">
               <strong>{report.overall}%</strong>
@@ -56,7 +56,7 @@ export default function ReadinessPage() {
                 <div className="item" key={c.key}>
                   <div className="readiness-row">
                     <strong>{c.label}</strong>
-                    <span className={`pill pill-${c.status}`}>{label}</span>
+                    <span className={`pill pill-${c.acknowledged ? "complete" : c.status}`}>{label}</span>
                   </div>
                   {c.suggestion && (
                     <div className="meta">
