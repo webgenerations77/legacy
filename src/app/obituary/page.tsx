@@ -59,7 +59,9 @@ export default function ObituaryPage() {
         setReady(true);
       })
       .catch(() => {
-        if (active) setError("We couldn't load your obituary.");
+        if (!active) return;
+        setError("We couldn't load your obituary.");
+        setReady(true);
       });
     return () => {
       active = false;
@@ -82,6 +84,7 @@ export default function ObituaryPage() {
     setError(null);
     setSaved(false);
     setGenerating(true);
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
     try {
       const res = await fetch("/api/obituary/generate", {
         method: "POST",
@@ -92,7 +95,7 @@ export default function ObituaryPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "Generation failed. Please try again.");
       }
-      const reader = res.body.getReader();
+      reader = res.body.getReader();
       const decoder = new TextDecoder();
       setDraft("");
       for (;;) {
@@ -101,7 +104,10 @@ export default function ObituaryPage() {
         const chunk = decoder.decode(value, { stream: true });
         setDraft((d) => d + chunk);
       }
+      const tail = decoder.decode();
+      if (tail) setDraft((d) => d + tail);
     } catch (e) {
+      await reader?.cancel().catch(() => {});
       setError(e instanceof Error ? e.message : "Generation failed.");
     } finally {
       setGenerating(false);
