@@ -517,6 +517,7 @@ describe("walking skeleton (live)", () => {
 
     // GET returns the same blob, which decrypts back to the original state
     const g1 = await fetch(`${BASE}/api/readiness/state`, { headers: { cookie } });
+    expect(g1.status).toBe(200);
     const { state: stored } = await g1.json();
     expect(stored).toBeTruthy();
     expect(
@@ -526,12 +527,14 @@ describe("walking skeleton (live)", () => {
     // upsert: a second PUT overwrites rather than duplicates
     const state2: ReadinessState = { acknowledgedEmpty: ["vault"] };
     const enc2 = await encryptItem(mk, serializeReadinessState(state2));
-    await fetch(`${BASE}/api/readiness/state`, {
+    const put2 = await fetch(`${BASE}/api/readiness/state`, {
       method: "PUT",
       headers: { ...json, cookie },
       body: JSON.stringify(enc2),
     });
+    expect(put2.status).toBe(200);
     const g2 = await fetch(`${BASE}/api/readiness/state`, { headers: { cookie } });
+    expect(g2.status).toBe(200);
     const { state: stored2 } = await g2.json();
     expect(
       parseReadinessState(await decryptItem(mk, stored2.ciphertext, stored2.iv)),
