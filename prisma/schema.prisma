@@ -18,6 +18,7 @@ model User {
   financialAccounts FinancialAccount[]
   bills             Bill[]
   loans             Loan[]
+  beneficiaries     Beneficiary[]
 }
 
 model Session {
@@ -56,6 +57,15 @@ model Bill {
 }
 
 model Loan {
+  id         String   @id @default(cuid())
+  userId     String
+  ciphertext String
+  iv         String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Beneficiary {
   id         String   @id @default(cuid())
   userId     String
   ciphertext String
