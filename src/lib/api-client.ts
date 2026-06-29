@@ -58,4 +58,24 @@ export const api = {
     }
     return res.json() as Promise<{ ok: true }>;
   },
+  getReadinessState: async () => {
+    const res = await fetch("/api/readiness/state");
+    if (res.status === 401) return { state: null };
+    if (!res.ok) throw new Error("We couldn't load your readiness data.");
+    return res.json() as Promise<{
+      state: { ciphertext: string; iv: string } | null;
+    }>;
+  },
+  putReadinessState: async (ciphertext: string, iv: string) => {
+    const res = await fetch("/api/readiness/state", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ciphertext, iv }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? `Request failed (${res.status})`);
+    }
+    return res.json() as Promise<{ ok: true }>;
+  },
 };
