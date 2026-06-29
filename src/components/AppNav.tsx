@@ -24,6 +24,7 @@ export function AppNav() {
       <div className="navlinks">
         <Link href="/vault">Vault</Link>
         <Link href="/accounts">Accounts</Link>
+        <Link href="/bills">Bills</Link>
       </div>
       <button type="button" className="linkbtn" onClick={onLogout}>
         Lock &amp; sign out

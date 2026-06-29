@@ -282,3 +282,20 @@ textarea:focus {
   font-size: 0.92rem;
   color: var(--slate);
 }
+
+/* Inline checkbox row (e.g. auto-pay) */
+.checkrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+  margin: 16px 0 7px;
+}
+.checkrow input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
