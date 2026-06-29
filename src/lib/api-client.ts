@@ -1,3 +1,5 @@
+import { type ObituaryIntake } from "@/lib/obituary";
+
 async function post<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
@@ -36,4 +38,24 @@ export const api = {
   },
   addRecord: (resource: string, ciphertext: string, iv: string) =>
     post<{ id: string }>(`/api/${resource}`, { ciphertext, iv }),
+  getObituary: async () => {
+    const res = await fetch("/api/obituary");
+    if (res.status === 401) return null;
+    if (!res.ok) throw new Error("We couldn't load your obituary.");
+    return res.json() as Promise<{
+      obituary: { intake: ObituaryIntake; draft: string } | null;
+    }>;
+  },
+  saveObituary: async (intake: ObituaryIntake, draft: string) => {
+    const res = await fetch("/api/obituary", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ intake, draft }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? `Request failed (${res.status})`);
+    }
+    return res.json() as Promise<{ ok: true }>;
+  },
 };
