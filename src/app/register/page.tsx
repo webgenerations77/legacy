@@ -46,6 +46,8 @@ export default function RegisterPage() {
         <button type="submit" disabled={busy}>
           {busy ? "Creating…" : "Create account"}
         </button>
+        <p className="subtle" style={{ textAlign: "center", margin: "0.5rem 0" }}>or</p>
+        <a className="linkbtn" href="/api/auth/google/start">Continue with Google</a>
         {error && <p className="error">{error}</p>}
         <p className="link">Already have one? <Link href="/unlock">Unlock</Link></p>
       </form>

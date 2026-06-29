@@ -18,6 +18,7 @@ export async function POST(req: Request) {
   );
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return generic;
+  if (!user.authVerifierHash) return generic; // Google-only account — no passphrase
   if (!(await verifyVerifier(authVerifier, user.authVerifierHash))) return generic;
 
   const sessionId = await createSession(user.id);
