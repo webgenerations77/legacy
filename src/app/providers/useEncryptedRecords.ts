@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { useKey } from "@/app/providers/KeyProvider";
@@ -25,13 +25,22 @@ export function useEncryptedRecords<T>(opts: {
   noun: string;
   saveError?: string;
 }) {
-  const { resource, listKey, serialize, parse, noun } = opts;
+  const { resource, listKey, noun } = opts;
   const saveError = opts.saveError ?? "We couldn't save that. Please try again.";
   const router = useRouter();
   const { masterKey } = useKey();
   const [items, setItems] = useState<EncryptedRecordItem<T>[]>([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
+
+  // Hold serialize/parse in refs so callers may pass inline lambdas without
+  // destabilizing the load/add callbacks. If these functions sat in the
+  // dependency arrays, a new inline reference each render would recreate
+  // `load`, rerun the load effect, and cause an infinite refetch loop.
+  const serializeRef = useRef(opts.serialize);
+  const parseRef = useRef(opts.parse);
+  serializeRef.current = opts.serialize;
+  parseRef.current = opts.parse;
 
   const load = useCallback(async () => {
     if (!masterKey) return;
@@ -41,7 +50,10 @@ export function useEncryptedRecords<T>(opts: {
     const decrypted = await Promise.all(
       rows.map(async (r) => {
         try {
-          return { id: r.id, value: parse(await decryptItem(masterKey, r.ciphertext, r.iv)) };
+          return {
+            id: r.id,
+            value: parseRef.current(await decryptItem(masterKey, r.ciphertext, r.iv)),
+          };
         } catch {
           return { id: r.id, value: null };
         }
@@ -49,7 +61,7 @@ export function useEncryptedRecords<T>(opts: {
     );
     setItems(decrypted);
     setLoaded(true);
-  }, [masterKey, resource, listKey, parse]);
+  }, [masterKey, resource, listKey]);
 
   useEffect(() => {
     if (!masterKey) {
@@ -66,7 +78,7 @@ export function useEncryptedRecords<T>(opts: {
       if (!masterKey) return false;
       setError("");
       try {
-        const { ciphertext, iv } = await encryptItem(masterKey, serialize(value));
+        const { ciphertext, iv } = await encryptItem(masterKey, serializeRef.current(value));
         await api.addRecord(resource, ciphertext, iv);
         await load();
         return true;
@@ -75,7 +87,7 @@ export function useEncryptedRecords<T>(opts: {
         return false;
       }
     },
-    [masterKey, resource, serialize, load, saveError],
+    [masterKey, resource, load, saveError],
   );
 
   return { items, error, loaded, add, masterKey };
