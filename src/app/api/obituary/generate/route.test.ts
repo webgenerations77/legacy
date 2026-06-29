@@ -80,9 +80,12 @@ describe("obituary generate route", () => {
       model: unknown;
       system: string;
       prompt: string;
+      onError: unknown;
     };
     expect(arg.model).toBe("mock-model");
     expect(arg.system.toLowerCase()).toContain("warm");
     expect(arg.prompt).toContain("Name: Jane Doe");
+    // Generation errors stream after the 200; onError logs them server-side.
+    expect(typeof arg.onError).toBe("function");
   });
 });

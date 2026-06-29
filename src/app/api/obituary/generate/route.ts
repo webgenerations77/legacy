@@ -26,6 +26,17 @@ export async function POST(req: Request) {
   }
 
   const { system, prompt } = buildObituaryPrompt(intake);
-  const result = streamText({ model: anthropic(MODEL_ID), system, prompt });
+  const result = streamText({
+    model: anthropic(MODEL_ID),
+    system,
+    prompt,
+    // Generation errors (auth, rate limit, upstream outage) happen after the
+    // streamed 200 response has begun, so they can't change the status code.
+    // Log them server-side; the client surfaces a failure when the stream
+    // arrives empty (no obituary text was produced).
+    onError: ({ error }) => {
+      console.error("[obituary/generate] streamText error:", error);
+    },
+  });
   return result.toTextStreamResponse();
 }
