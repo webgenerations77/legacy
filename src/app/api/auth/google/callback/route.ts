@@ -25,21 +25,20 @@ export async function GET(req: Request) {
     return fail("google_failed");
   }
 
-  let identity;
   try {
-    identity = await resolveGoogleIdentity(code, codeVerifier);
+    const identity = await resolveGoogleIdentity(code, codeVerifier);
+    if (!identity.emailVerified) return fail("google_unverified");
+
+    const result = await findOrCreateGoogleUser(identity);
+    if (!result.ok) return fail("email_exists");
+
+    const sessionId = await createSession(result.userId);
+    const res = NextResponse.redirect(new URL("/unlock", appBaseUrl()));
+    res.cookies.set(SESSION_COOKIE, sessionId, sessionCookieOptions(sessionExpiry()));
+    res.cookies.delete("google_oauth_state");
+    res.cookies.delete("google_code_verifier");
+    return res;
   } catch {
     return fail("google_failed");
   }
-  if (!identity.emailVerified) return fail("google_unverified");
-
-  const result = await findOrCreateGoogleUser(identity);
-  if (!result.ok) return fail("email_exists");
-
-  const sessionId = await createSession(result.userId);
-  const res = NextResponse.redirect(new URL("/unlock", appBaseUrl()));
-  res.cookies.set(SESSION_COOKIE, sessionId, sessionCookieOptions(sessionExpiry()));
-  res.cookies.delete("google_oauth_state");
-  res.cookies.delete("google_code_verifier");
-  return res;
 }
