@@ -98,14 +98,24 @@ export default function ObituaryPage() {
       reader = res.body.getReader();
       const decoder = new TextDecoder();
       setDraft("");
+      let received = false;
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
+        if (chunk) received = true;
         setDraft((d) => d + chunk);
       }
       const tail = decoder.decode();
-      if (tail) setDraft((d) => d + tail);
+      if (tail) {
+        received = true;
+        setDraft((d) => d + tail);
+      }
+      // A successful generation always streams text; an empty stream means the
+      // model call failed after the 200 began (logged server-side).
+      if (!received) {
+        setError("Generation failed — please try again in a moment.");
+      }
     } catch (e) {
       await reader?.cancel().catch(() => {});
       setError(e instanceof Error ? e.message : "Generation failed.");
