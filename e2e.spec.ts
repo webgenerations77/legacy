@@ -14,6 +14,7 @@ import {
   decryptItem,
 } from "@/lib/crypto";
 import { serializeAccount, parseAccount, type Account } from "@/lib/account";
+import { serializeBill, parseBill, type Bill } from "@/lib/bill";
 
 const BASE = "http://localhost:3000";
 // Inspect the DEV database directly (the server writes here). vitest.setup loads
@@ -176,5 +177,69 @@ describe("walking skeleton (live)", () => {
 
     // cleanup
     await db.user.delete({ where: { email: aEmail } });
+  }, 60_000);
+
+  it("stores and reads back an encrypted bill", async () => {
+    const bEmail = `e2e-bill-${Date.now()}@example.com`;
+    const pass = "bill-passphrase-123";
+
+    // register + login
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(pass, salt);
+    const av = await deriveAuthVerifier(mk, pass);
+    await fetch(`${BASE}/api/auth/register`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: bEmail, salt, authVerifier: av }),
+    });
+    const login = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: bEmail, authVerifier: av }),
+    });
+    const cookie = login.headers
+      .getSetCookie()
+      .map((c) => c.split(";")[0])
+      .join("; ");
+
+    // encrypt + store a bill
+    const billRecord: Bill = {
+      name: "Northern Electric",
+      category: "Utility",
+      amount: "142.50",
+      frequency: "Monthly",
+      nextDueDate: "2026-07-01",
+      paymentMethod: "Visa ••1234",
+      autoPay: true,
+      website: "northern-electric.example.com",
+      notes: "Budget billing plan",
+    };
+    const { ciphertext, iv } = await encryptItem(mk, serializeBill(billRecord));
+    const add = await fetch(`${BASE}/api/bills`, {
+      method: "POST",
+      headers: { ...json, cookie },
+      body: JSON.stringify({ ciphertext, iv }),
+    });
+    expect(add.status).toBe(201);
+
+    // list + decrypt
+    const list = await fetch(`${BASE}/api/bills`, { headers: { cookie } });
+    expect(list.status).toBe(200);
+    const { bills } = await list.json();
+    expect(bills).toHaveLength(1);
+    const back = parseBill(await decryptItem(mk, bills[0].ciphertext, bills[0].iv));
+    expect(back).toEqual(billRecord);
+
+    // zero-knowledge: stored row has no plaintext
+    const user = await db.user.findUnique({
+      where: { email: bEmail },
+      include: { bills: true },
+    });
+    const stored = user!.bills[0];
+    expect(stored.ciphertext).not.toContain("Northern Electric");
+    expect(stored.ciphertext).not.toContain("142.50");
+
+    // cleanup
+    await db.user.delete({ where: { email: bEmail } });
   }, 60_000);
 });
