@@ -21,6 +21,11 @@ import {
   parseBeneficiary,
   type Beneficiary,
 } from "@/lib/beneficiary";
+import {
+  serializeReadinessState,
+  parseReadinessState,
+  type ReadinessState,
+} from "@/lib/readiness";
 
 const BASE = "http://localhost:3000";
 // Inspect the DEV database directly (the server writes here). vitest.setup loads
@@ -466,5 +471,82 @@ describe("walking skeleton (live)", () => {
 
     // cleanup
     await db.user.delete({ where: { id: user.id } });
+  }, 60_000);
+
+  it("stores and reads back the encrypted readiness acknowledgment (no plaintext)", async () => {
+    const rEmail = `e2e-readiness-${Date.now()}@example.com`;
+    const pass = "readiness-passphrase-123";
+
+    // register + login
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(pass, salt);
+    const av = await deriveAuthVerifier(mk, pass);
+    await fetch(`${BASE}/api/auth/register`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: rEmail, salt, authVerifier: av }),
+    });
+    const login = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: rEmail, authVerifier: av }),
+    });
+    const cookie = login.headers
+      .getSetCookie()
+      .map((c) => c.split(";")[0])
+      .join("; ");
+
+    // unauthenticated GET is rejected
+    const noAuth = await fetch(`${BASE}/api/readiness/state`);
+    expect(noAuth.status).toBe(401);
+
+    // no state yet for this user
+    const g0 = await fetch(`${BASE}/api/readiness/state`, { headers: { cookie } });
+    expect(g0.status).toBe(200);
+    expect(await g0.json()).toEqual({ state: null });
+
+    // PUT an encrypted acknowledgment blob
+    const state: ReadinessState = { acknowledgedEmpty: ["loans", "bills"] };
+    const { ciphertext, iv } = await encryptItem(mk, serializeReadinessState(state));
+    const put = await fetch(`${BASE}/api/readiness/state`, {
+      method: "PUT",
+      headers: { ...json, cookie },
+      body: JSON.stringify({ ciphertext, iv }),
+    });
+    expect(put.status).toBe(200);
+
+    // GET returns the same blob, which decrypts back to the original state
+    const g1 = await fetch(`${BASE}/api/readiness/state`, { headers: { cookie } });
+    const { state: stored } = await g1.json();
+    expect(stored).toBeTruthy();
+    expect(
+      parseReadinessState(await decryptItem(mk, stored.ciphertext, stored.iv)),
+    ).toEqual(state);
+
+    // upsert: a second PUT overwrites rather than duplicates
+    const state2: ReadinessState = { acknowledgedEmpty: ["vault"] };
+    const enc2 = await encryptItem(mk, serializeReadinessState(state2));
+    await fetch(`${BASE}/api/readiness/state`, {
+      method: "PUT",
+      headers: { ...json, cookie },
+      body: JSON.stringify(enc2),
+    });
+    const g2 = await fetch(`${BASE}/api/readiness/state`, { headers: { cookie } });
+    const { state: stored2 } = await g2.json();
+    expect(
+      parseReadinessState(await decryptItem(mk, stored2.ciphertext, stored2.iv)),
+    ).toEqual(state2);
+
+    // ZERO-KNOWLEDGE: the stored row holds only ciphertext — no plaintext keys
+    const user = await db.user.findUnique({
+      where: { email: rEmail },
+      include: { readinessState: true },
+    });
+    expect(user!.readinessState).toBeTruthy();
+    expect(user!.readinessState!.ciphertext).not.toContain("vault");
+    expect(user!.readinessState!.ciphertext).not.toContain("acknowledgedEmpty");
+
+    // cleanup
+    await db.user.delete({ where: { email: rEmail } });
   }, 60_000);
 });
