@@ -378,4 +378,93 @@ describe("walking skeleton (live)", () => {
     // cleanup
     await db.user.delete({ where: { email: beEmail } });
   }, 60_000);
+
+  it("lets a Google-session user set up and unlock a vault (no plaintext stored)", async () => {
+    const gEmail = `e2e-google-${Date.now()}@example.com`;
+    const googleId = `gid-e2e-${Date.now()}`;
+    const pass = "google-vault-passphrase-123";
+
+    // Simulate the post-Google state: a user row with googleId and no vault yet,
+    // plus a live session row. (The Google OAuth dance itself can't run headless.)
+    const user = await db.user.create({ data: { email: gEmail, googleId } });
+    const sessionId = `e2e-sess-${Date.now()}`;
+    await db.session.create({
+      data: { id: sessionId, userId: user.id, expiresAt: new Date(Date.now() + 3600_000) },
+    });
+    const cookie = `legacy_session=${sessionId}`;
+
+    // status → not initialized
+    const s1 = await fetch(`${BASE}/api/auth/vault/status`, { headers: { cookie } });
+    expect(s1.status).toBe(200);
+    expect(await s1.json()).toEqual({ initialized: false });
+
+    // a Google-only user (no vault) cannot use the email/passphrase login
+    const badLogin = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: gEmail, authVerifier: "anything" }),
+    });
+    expect(badLogin.status).toBe(401);
+
+    // init the vault: derive client-side, send salt + authVerifier
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(pass, salt);
+    const av = await deriveAuthVerifier(mk, pass);
+    const init = await fetch(`${BASE}/api/auth/vault/init`, {
+      method: "POST",
+      headers: { ...json, cookie },
+      body: JSON.stringify({ salt, authVerifier: av }),
+    });
+    expect(init.status).toBe(200);
+
+    // init is one-shot: a second init is rejected
+    const reinit = await fetch(`${BASE}/api/auth/vault/init`, {
+      method: "POST",
+      headers: { ...json, cookie },
+      body: JSON.stringify({ salt, authVerifier: av }),
+    });
+    expect(reinit.status).toBe(409);
+
+    // status → initialized, returns the salt
+    const s2 = await fetch(`${BASE}/api/auth/vault/status`, { headers: { cookie } });
+    expect(await s2.json()).toEqual({ initialized: true, salt });
+
+    // unlock: correct passphrase ok, wrong passphrase rejected
+    const okUnlock = await fetch(`${BASE}/api/auth/vault/unlock`, {
+      method: "POST",
+      headers: { ...json, cookie },
+      body: JSON.stringify({ authVerifier: av }),
+    });
+    expect(okUnlock.status).toBe(200);
+    const wrongMk = await deriveMasterKey("not-the-passphrase", salt);
+    const wrongAv = await deriveAuthVerifier(wrongMk, "not-the-passphrase");
+    const badUnlock = await fetch(`${BASE}/api/auth/vault/unlock`, {
+      method: "POST",
+      headers: { ...json, cookie },
+      body: JSON.stringify({ authVerifier: wrongAv }),
+    });
+    expect(badUnlock.status).toBe(401);
+
+    // the derived key encrypts a real record through the existing record API
+    const secret = "Google user's first encrypted note.";
+    const enc = await encryptItem(mk, secret);
+    const add = await fetch(`${BASE}/api/vault`, {
+      method: "POST",
+      headers: { ...json, cookie },
+      body: JSON.stringify(enc),
+    });
+    expect(add.status).toBe(201);
+    const list = await fetch(`${BASE}/api/vault`, { headers: { cookie } });
+    const { items } = await list.json();
+    expect(await decryptItem(mk, items[0].ciphertext, items[0].iv)).toBe(secret);
+
+    // ZERO-KNOWLEDGE: stored verifier is bcrypt, never the raw verifier or passphrase
+    const stored = await db.user.findUnique({ where: { id: user.id } });
+    expect(stored!.kdfSalt).toBe(salt);
+    expect(stored!.authVerifierHash!.startsWith("$2")).toBe(true);
+    expect(stored!.authVerifierHash).not.toBe(av);
+
+    // cleanup
+    await db.user.delete({ where: { id: user.id } });
+  }, 60_000);
 });
