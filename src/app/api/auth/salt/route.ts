@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
+  if (!user || !user.kdfSalt) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
   return NextResponse.json({ salt: user.kdfSalt });
