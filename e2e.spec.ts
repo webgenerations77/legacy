@@ -16,6 +16,11 @@ import {
 import { serializeAccount, parseAccount, type Account } from "@/lib/account";
 import { serializeBill, parseBill, type Bill } from "@/lib/bill";
 import { serializeLoan, parseLoan, type Loan } from "@/lib/loan";
+import {
+  serializeBeneficiary,
+  parseBeneficiary,
+  type Beneficiary,
+} from "@/lib/beneficiary";
 
 const BASE = "http://localhost:3000";
 // Inspect the DEV database directly (the server writes here). vitest.setup loads
@@ -308,5 +313,69 @@ describe("walking skeleton (live)", () => {
 
     // cleanup
     await db.user.delete({ where: { email: lEmail } });
+  }, 60_000);
+
+  it("stores and reads back an encrypted beneficiary", async () => {
+    const beEmail = `e2e-bene-${Date.now()}@example.com`;
+    const pass = "beneficiary-passphrase-123";
+
+    // register + login
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(pass, salt);
+    const av = await deriveAuthVerifier(mk, pass);
+    await fetch(`${BASE}/api/auth/register`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: beEmail, salt, authVerifier: av }),
+    });
+    const login = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: beEmail, authVerifier: av }),
+    });
+    const cookie = login.headers
+      .getSetCookie()
+      .map((c) => c.split(";")[0])
+      .join("; ");
+
+    // encrypt + store a beneficiary
+    const beneficiaryRecord: Beneficiary = {
+      fullName: "Jane Doe",
+      relationship: "Spouse",
+      email: "jane@example.com",
+      phone: "555-123-4567",
+      mailingAddress: "12 Oak St, Springfield",
+      allocation: "50",
+      notes: "Primary beneficiary",
+    };
+    const { ciphertext, iv } = await encryptItem(mk, serializeBeneficiary(beneficiaryRecord));
+    const add = await fetch(`${BASE}/api/beneficiaries`, {
+      method: "POST",
+      headers: { ...json, cookie },
+      body: JSON.stringify({ ciphertext, iv }),
+    });
+    expect(add.status).toBe(201);
+
+    // list + decrypt
+    const list = await fetch(`${BASE}/api/beneficiaries`, { headers: { cookie } });
+    expect(list.status).toBe(200);
+    const { beneficiaries } = await list.json();
+    expect(beneficiaries).toHaveLength(1);
+    const back = parseBeneficiary(
+      await decryptItem(mk, beneficiaries[0].ciphertext, beneficiaries[0].iv),
+    );
+    expect(back).toEqual(beneficiaryRecord);
+
+    // zero-knowledge: stored row has no plaintext
+    const user = await db.user.findUnique({
+      where: { email: beEmail },
+      include: { beneficiaries: true },
+    });
+    const stored = user!.beneficiaries[0];
+    expect(stored.ciphertext).not.toContain("Jane Doe");
+    expect(stored.ciphertext).not.toContain("jane@example.com");
+
+    // cleanup
+    await db.user.delete({ where: { email: beEmail } });
   }, 60_000);
 });

@@ -5,7 +5,7 @@ import { getSessionUserId } from "@/lib/auth";
 import { SESSION_COOKIE } from "@/lib/session-cookie";
 import { readJsonBody } from "@/lib/http";
 
-type RecordModel = "vaultItem" | "financialAccount" | "bill" | "loan";
+type RecordModel = "vaultItem" | "financialAccount" | "bill" | "loan" | "beneficiary";
 
 interface BlobRow {
   id: string;
@@ -44,6 +44,8 @@ export function createEncryptedRecordRoute(opts: { model: RecordModel; listKey: 
         return prisma.bill as unknown as BlobDelegate;
       case "loan":
         return prisma.loan as unknown as BlobDelegate;
+      case "beneficiary":
+        return prisma.beneficiary as unknown as BlobDelegate;
     }
   })();
 
