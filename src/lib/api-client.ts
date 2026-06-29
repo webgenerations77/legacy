@@ -26,13 +26,4 @@ export const api = {
   },
   addRecord: (resource: string, ciphertext: string, iv: string) =>
     post<{ id: string }>(`/api/${resource}`, { ciphertext, iv }),
-  listBills: async () => {
-    const res = await fetch("/api/bills");
-    if (!res.ok) throw new Error("We couldn't load your bills.");
-    return res.json() as Promise<{
-      bills: { id: string; ciphertext: string; iv: string }[];
-    }>;
-  },
-  addBill: (ciphertext: string, iv: string) =>
-    post<{ id: string }>("/api/bills", { ciphertext, iv }),
 };
