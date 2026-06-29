@@ -114,7 +114,7 @@ describe("walking skeleton (live)", () => {
     });
     expect(user).toBeTruthy();
     // auth verifier is stored as a bcrypt hash, not the verifier itself
-    expect(user!.authVerifierHash.startsWith("$2")).toBe(true);
+    expect(user!.authVerifierHash!.startsWith("$2")).toBe(true);
     expect(user!.authVerifierHash).not.toBe(av2);
     // vault item is opaque: no plaintext anywhere
     const stored = user!.vaultItems[0];
