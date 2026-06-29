@@ -42,6 +42,7 @@ export default function AccountsPage() {
 
   const load = useCallback(async () => {
     if (!masterKey) return;
+    setError("");
     const { accounts } = await api.listAccounts();
     const decrypted = await Promise.all(
       accounts.map(async (a) => {

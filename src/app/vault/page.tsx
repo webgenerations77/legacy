@@ -18,6 +18,7 @@ export default function VaultPage() {
 
   const load = useCallback(async () => {
     if (!masterKey) return;
+    setError("");
     const { items: raw } = await api.listVault();
     const decrypted = await Promise.all(
       raw.map(async (it) => {
