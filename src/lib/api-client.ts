@@ -26,4 +26,13 @@ export const api = {
   },
   addVaultItem: (ciphertext: string, iv: string) =>
     post<{ id: string }>("/api/vault", { ciphertext, iv }),
+  listAccounts: async () => {
+    const res = await fetch("/api/accounts");
+    if (!res.ok) throw new Error("We couldn't load your accounts.");
+    return res.json() as Promise<{
+      accounts: { id: string; ciphertext: string; iv: string }[];
+    }>;
+  },
+  addAccount: (ciphertext: string, iv: string) =>
+    post<{ id: string }>("/api/accounts", { ciphertext, iv }),
 };

@@ -13,6 +13,7 @@ import {
   encryptItem,
   decryptItem,
 } from "@/lib/crypto";
+import { serializeAccount, parseAccount, type Account } from "@/lib/account";
 
 const BASE = "http://localhost:3000";
 // Inspect the DEV database directly (the server writes here). vitest.setup loads
@@ -114,5 +115,66 @@ describe("walking skeleton (live)", () => {
     expect(stored.ciphertext).not.toContain(secret);
     // ...but it still decrypts back to the original
     expect(await decryptItem(mk2, stored.ciphertext, stored.iv)).toBe(secret);
+  }, 60_000);
+
+  it("stores and reads back an encrypted financial account", async () => {
+    const aEmail = `e2e-acct-${Date.now()}@example.com`;
+    const pass = "account-passphrase-123";
+
+    // register + login
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(pass, salt);
+    const av = await deriveAuthVerifier(mk, pass);
+    await fetch(`${BASE}/api/auth/register`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: aEmail, salt, authVerifier: av }),
+    });
+    const login = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: aEmail, authVerifier: av }),
+    });
+    const cookie = login.headers
+      .getSetCookie()
+      .map((c) => c.split(";")[0])
+      .join("; ");
+
+    // encrypt + store an account
+    const account: Account = {
+      type: "Savings",
+      institution: "First National Bank",
+      nickname: "Rainy day",
+      accountNumber: "123456784821",
+      balance: "12,500",
+      notes: "Auto-pays the mortgage",
+    };
+    const { ciphertext, iv } = await encryptItem(mk, serializeAccount(account));
+    const add = await fetch(`${BASE}/api/accounts`, {
+      method: "POST",
+      headers: { ...json, cookie },
+      body: JSON.stringify({ ciphertext, iv }),
+    });
+    expect(add.status).toBe(201);
+
+    // list + decrypt
+    const list = await fetch(`${BASE}/api/accounts`, { headers: { cookie } });
+    expect(list.status).toBe(200);
+    const { accounts } = await list.json();
+    expect(accounts).toHaveLength(1);
+    const back = parseAccount(await decryptItem(mk, accounts[0].ciphertext, accounts[0].iv));
+    expect(back).toEqual(account);
+
+    // zero-knowledge: stored row has no plaintext
+    const user = await db.user.findUnique({
+      where: { email: aEmail },
+      include: { financialAccounts: true },
+    });
+    const stored = user!.financialAccounts[0];
+    expect(stored.ciphertext).not.toContain("First National");
+    expect(stored.ciphertext).not.toContain("123456784821");
+
+    // cleanup
+    await db.user.delete({ where: { email: aEmail } });
   }, 60_000);
 });
