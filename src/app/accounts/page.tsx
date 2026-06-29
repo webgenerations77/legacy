@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/api-client";
+import { useState } from "react";
 import { AppNav } from "@/components/AppNav";
 import { LegacyMark } from "@/components/Logo";
-import { useKey } from "@/app/providers/KeyProvider";
-import { encryptItem, decryptItem } from "@/lib/crypto";
+import { useEncryptedRecords } from "@/app/providers/useEncryptedRecords";
 import {
   type Account,
   type AccountType,
@@ -15,13 +12,7 @@ import {
   maskAccountNumber,
 } from "@/lib/account";
 
-const TYPES: AccountType[] = [
-  "Checking",
-  "Savings",
-  "Investment",
-  "Retirement",
-  "Other",
-];
+const TYPES: AccountType[] = ["Checking", "Savings", "Investment", "Retirement", "Other"];
 
 const EMPTY: Account = {
   type: "Checking",
@@ -33,40 +24,14 @@ const EMPTY: Account = {
 };
 
 export default function AccountsPage() {
-  const router = useRouter();
-  const { masterKey } = useKey();
-  const [items, setItems] = useState<{ id: string; account: Account | null }[]>([]);
+  const { items, error, loaded, add, masterKey } = useEncryptedRecords<Account>({
+    resource: "accounts",
+    listKey: "accounts",
+    serialize: serializeAccount,
+    parse: parseAccount,
+    noun: "accounts",
+  });
   const [draft, setDraft] = useState<Account>(EMPTY);
-  const [error, setError] = useState("");
-  const [loaded, setLoaded] = useState(false);
-
-  const load = useCallback(async () => {
-    if (!masterKey) return;
-    setError("");
-    const { accounts } = await api.listAccounts();
-    const decrypted = await Promise.all(
-      accounts.map(async (a) => {
-        try {
-          const json = await decryptItem(masterKey, a.ciphertext, a.iv);
-          return { id: a.id, account: parseAccount(json) };
-        } catch {
-          return { id: a.id, account: null };
-        }
-      }),
-    );
-    setItems(decrypted);
-    setLoaded(true);
-  }, [masterKey]);
-
-  useEffect(() => {
-    if (!masterKey) {
-      router.replace("/unlock");
-      return;
-    }
-    load().catch(() =>
-      setError("We couldn't load your accounts. Please try unlocking again."),
-    );
-  }, [masterKey, load, router]);
 
   function set<K extends keyof Account>(key: K, value: Account[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -74,18 +39,8 @@ export default function AccountsPage() {
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!masterKey || !draft.nickname.trim()) return;
-    setError("");
-    try {
-      const { ciphertext, iv } = await encryptItem(masterKey, serializeAccount(draft));
-      await api.addAccount(ciphertext, iv);
-      setDraft(EMPTY);
-      await load();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "We couldn't save that. Please try again.",
-      );
-    }
+    if (!draft.nickname.trim()) return;
+    if (await add(draft)) setDraft(EMPTY);
   }
 
   if (!masterKey) return null;
@@ -159,18 +114,18 @@ export default function AccountsPage() {
         )}
         {items.map((it) => (
           <div className="item" key={it.id}>
-            {it.account ? (
+            {it.value ? (
               <>
-                <strong>{it.account.nickname || "Untitled account"}</strong>
+                <strong>{it.value.nickname || "Untitled account"}</strong>
                 <div className="meta">
-                  {it.account.type}
-                  {it.account.institution ? ` · ${it.account.institution}` : ""}
+                  {it.value.type}
+                  {it.value.institution ? ` · ${it.value.institution}` : ""}
                 </div>
-                {it.account.accountNumber && (
-                  <div className="meta">{maskAccountNumber(it.account.accountNumber)}</div>
+                {it.value.accountNumber && (
+                  <div className="meta">{maskAccountNumber(it.value.accountNumber)}</div>
                 )}
-                {it.account.balance && <div className="meta">Balance: {it.account.balance}</div>}
-                {it.account.notes && <div className="notes">{it.account.notes}</div>}
+                {it.value.balance && <div className="meta">Balance: {it.value.balance}</div>}
+                {it.value.notes && <div className="notes">{it.value.notes}</div>}
               </>
             ) : (
               "We couldn't unlock this account."

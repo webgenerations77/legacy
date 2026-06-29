@@ -19,29 +19,11 @@ export const api = {
   login: (email: string, authVerifier: string) =>
     post<{ ok: true }>("/api/auth/login", { email, authVerifier }),
   logout: () => post<{ ok: true }>("/api/auth/logout", {}),
-  listVault: async () => {
-    const res = await fetch("/api/vault");
-    if (!res.ok) throw new Error("Could not load your vault.");
-    return res.json() as Promise<{ items: { id: string; ciphertext: string; iv: string }[] }>;
+  listRecords: async (resource: string) => {
+    const res = await fetch(`/api/${resource}`);
+    if (!res.ok) throw new Error("We couldn't load your data.");
+    return res.json() as Promise<Record<string, unknown>>;
   },
-  addVaultItem: (ciphertext: string, iv: string) =>
-    post<{ id: string }>("/api/vault", { ciphertext, iv }),
-  listAccounts: async () => {
-    const res = await fetch("/api/accounts");
-    if (!res.ok) throw new Error("We couldn't load your accounts.");
-    return res.json() as Promise<{
-      accounts: { id: string; ciphertext: string; iv: string }[];
-    }>;
-  },
-  addAccount: (ciphertext: string, iv: string) =>
-    post<{ id: string }>("/api/accounts", { ciphertext, iv }),
-  listBills: async () => {
-    const res = await fetch("/api/bills");
-    if (!res.ok) throw new Error("We couldn't load your bills.");
-    return res.json() as Promise<{
-      bills: { id: string; ciphertext: string; iv: string }[];
-    }>;
-  },
-  addBill: (ciphertext: string, iv: string) =>
-    post<{ id: string }>("/api/bills", { ciphertext, iv }),
+  addRecord: (resource: string, ciphertext: string, iv: string) =>
+    post<{ id: string }>(`/api/${resource}`, { ciphertext, iv }),
 };

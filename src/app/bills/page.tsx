@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/api-client";
+import { useState } from "react";
 import { AppNav } from "@/components/AppNav";
 import { LegacyMark } from "@/components/Logo";
-import { useKey } from "@/app/providers/KeyProvider";
-import { encryptItem, decryptItem } from "@/lib/crypto";
+import { useEncryptedRecords } from "@/app/providers/useEncryptedRecords";
 import {
   type Bill,
   type Frequency,
@@ -27,13 +24,7 @@ const CATEGORIES: BillCategory[] = [
   "Other",
 ];
 
-const FREQUENCIES: Frequency[] = [
-  "Weekly",
-  "Monthly",
-  "Quarterly",
-  "Annual",
-  "One-time",
-];
+const FREQUENCIES: Frequency[] = ["Weekly", "Monthly", "Quarterly", "Annual", "One-time"];
 
 const EMPTY: Bill = {
   name: "",
@@ -48,40 +39,14 @@ const EMPTY: Bill = {
 };
 
 export default function BillsPage() {
-  const router = useRouter();
-  const { masterKey } = useKey();
-  const [items, setItems] = useState<{ id: string; bill: Bill | null }[]>([]);
+  const { items, error, loaded, add, masterKey } = useEncryptedRecords<Bill>({
+    resource: "bills",
+    listKey: "bills",
+    serialize: serializeBill,
+    parse: parseBill,
+    noun: "bills",
+  });
   const [draft, setDraft] = useState<Bill>(EMPTY);
-  const [error, setError] = useState("");
-  const [loaded, setLoaded] = useState(false);
-
-  const load = useCallback(async () => {
-    if (!masterKey) return;
-    setError("");
-    const { bills } = await api.listBills();
-    const decrypted = await Promise.all(
-      bills.map(async (b) => {
-        try {
-          const json = await decryptItem(masterKey, b.ciphertext, b.iv);
-          return { id: b.id, bill: parseBill(json) };
-        } catch {
-          return { id: b.id, bill: null };
-        }
-      }),
-    );
-    setItems(decrypted);
-    setLoaded(true);
-  }, [masterKey]);
-
-  useEffect(() => {
-    if (!masterKey) {
-      router.replace("/unlock");
-      return;
-    }
-    load().catch(() =>
-      setError("We couldn't load your bills. Please try unlocking again."),
-    );
-  }, [masterKey, load, router]);
 
   function set<K extends keyof Bill>(key: K, value: Bill[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -89,24 +54,14 @@ export default function BillsPage() {
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!masterKey || !draft.name.trim()) return;
-    setError("");
-    try {
-      const { ciphertext, iv } = await encryptItem(masterKey, serializeBill(draft));
-      await api.addBill(ciphertext, iv);
-      setDraft(EMPTY);
-      await load();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "We couldn't save that. Please try again.",
-      );
-    }
+    if (!draft.name.trim()) return;
+    if (await add(draft)) setDraft(EMPTY);
   }
 
   if (!masterKey) return null;
 
   const decryptedBills = items
-    .map((it) => it.bill)
+    .map((it) => it.value)
     .filter((b): b is Bill => b !== null);
   const sorted = sortByDueDate(decryptedBills);
 
@@ -216,7 +171,7 @@ export default function BillsPage() {
           <p className="subtle">No bills yet. Add your first above.</p>
         )}
 
-        {items.some((it) => it.bill === null) && (
+        {items.some((it) => it.value === null) && (
           <p className="subtle">We couldn&apos;t unlock some bills.</p>
         )}
 
