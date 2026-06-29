@@ -22,6 +22,7 @@ export function AppNav() {
   return (
     <nav className="appnav">
       <div className="navlinks">
+        <Link href="/readiness">Readiness</Link>
         <Link href="/vault">Vault</Link>
         <Link href="/accounts">Accounts</Link>
         <Link href="/bills">Bills</Link>

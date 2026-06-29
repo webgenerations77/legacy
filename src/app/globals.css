@@ -299,3 +299,39 @@ textarea:focus {
   width: auto;
   margin: 0;
 }
+
+.score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 1rem 0 1.5rem;
+}
+.score strong {
+  font-size: 2.75rem;
+  line-height: 1;
+}
+.readiness-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.pill {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pill-complete {
+  background: #e6f4ea;
+  color: #1e7e34;
+}
+.pill-attention {
+  background: #fdf3e2;
+  color: #9a6700;
+}
+.pill-empty {
+  background: #f0f0f0;
+  color: #555;
+}
