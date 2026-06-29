@@ -16,6 +16,7 @@ model User {
   sessions          Session[]
   vaultItems        VaultItem[]
   financialAccounts FinancialAccount[]
+  bills             Bill[]
 }
 
 model Session {
@@ -36,6 +37,15 @@ model VaultItem {
 }
 
 model FinancialAccount {
+  id         String   @id @default(cuid())
+  userId     String
+  ciphertext String
+  iv         String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Bill {
   id         String   @id @default(cuid())
   userId     String
   ciphertext String
