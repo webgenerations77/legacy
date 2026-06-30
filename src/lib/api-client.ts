@@ -1,12 +1,14 @@
 import { type ObituaryIntake } from "@/lib/obituary";
 
 export type SurvivorBlob = { id: string; ciphertext: string; iv: string };
+export type DocumentMetaRow = { id: string; metaCiphertext: string; metaIv: string };
 export type SurvivorRecords = {
   items: SurvivorBlob[];
   accounts: SurvivorBlob[];
   bills: SurvivorBlob[];
   loans: SurvivorBlob[];
   beneficiaries: SurvivorBlob[];
+  documents: DocumentMetaRow[];
   obituary: { intake: ObituaryIntake; draft: string } | null;
 };
 export type SurvivorClaim = {
@@ -133,4 +135,34 @@ export const api = {
     post<{ salt: string }>("/api/survivor/salt", { email }),
   survivorClaim: (email: string, survivorAuthVerifier: string) =>
     post<SurvivorClaim>("/api/survivor/claim", { email, survivorAuthVerifier }),
+  listDocuments: async () => {
+    const res = await fetch("/api/documents");
+    if (!res.ok) throw new Error("We couldn't load your documents.");
+    return res.json() as Promise<{ documents: DocumentMetaRow[] }>;
+  },
+  addDocument: (p: {
+    metaCiphertext: string;
+    metaIv: string;
+    contentCiphertext: string;
+    contentIv: string;
+  }) => post<{ id: string }>("/api/documents", p),
+  getDocumentContent: async (id: string) => {
+    const res = await fetch(`/api/documents/${id}`);
+    if (!res.ok) throw new Error("We couldn't open that file.");
+    return res.json() as Promise<{ contentCiphertext: string; contentIv: string }>;
+  },
+  deleteDocument: async (id: string) => {
+    const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? `Request failed (${res.status})`);
+    }
+    return res.json() as Promise<{ ok: true }>;
+  },
+  survivorDocument: (email: string, survivorAuthVerifier: string, documentId: string) =>
+    post<{ contentCiphertext: string; contentIv: string }>("/api/survivor/document", {
+      email,
+      survivorAuthVerifier,
+      documentId,
+    }),
 };

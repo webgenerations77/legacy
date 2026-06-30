@@ -26,6 +26,10 @@ export async function POST(req: Request) {
       bills: blobSelect,
       loans: blobSelect,
       beneficiaries: blobSelect,
+      documents: {
+        select: { id: true, metaCiphertext: true, metaIv: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      },
       obituary: { select: { intake: true, draft: true } },
     },
   });
@@ -45,6 +49,7 @@ export async function POST(req: Request) {
       bills: user.bills,
       loans: user.loans,
       beneficiaries: user.beneficiaries,
+      documents: user.documents,
       obituary: user.obituary,
     },
   });

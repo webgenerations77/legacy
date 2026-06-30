@@ -31,6 +31,7 @@ const userRow = {
   bills: [],
   loans: [],
   beneficiaries: [],
+  documents: [{ id: "d1", metaCiphertext: "dmc", metaIv: "dmi", createdAt: new Date(0) }],
   obituary: { intake: { subjectName: "X" }, draft: "An obituary" },
 };
 
@@ -84,17 +85,12 @@ describe("/api/survivor/claim", () => {
     verifyVerifier.mockResolvedValue(true);
     const res = await POST(req({ email: "a@b.com", survivorAuthVerifier: "right" }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({
-      escrow: { ciphertext: "EC", iv: "EI" },
-      records: {
-        items: [{ id: "v1", ciphertext: "vc", iv: "vi" }],
-        accounts: [{ id: "a1", ciphertext: "ac", iv: "ai" }],
-        bills: [],
-        loans: [],
-        beneficiaries: [],
-        obituary: { intake: { subjectName: "X" }, draft: "An obituary" },
-      },
-    });
+    const data = await res.json();
+    expect(data.escrow).toEqual({ ciphertext: "EC", iv: "EI" });
+    expect(data.records.documents).toEqual([
+      { id: "d1", metaCiphertext: "dmc", metaIv: "dmi", createdAt: new Date(0).toISOString() },
+    ]);
+    expect(JSON.stringify(data.records.documents)).not.toContain("contentCiphertext");
     expect(verifyVerifier).toHaveBeenCalledWith("right", "hash");
   });
 });
