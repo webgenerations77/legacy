@@ -77,3 +77,9 @@ Requires: `npm run dev`, dev DB, a logged-in user with the vault unlocked, real 
       `/api/assistant/chat` (it returns a stream, stores nothing).
 - [ ] Edit mode still works: open `/assistant?type=loans&id=<id>` → pinned banner,
       no interview button, Save fires PUT.
+
+---
+
+## Sprint 4 — Survivor mode
+
+- Survivor mode (Sprint 4 Slice 1): see `manual-verification-survivor.md`. Note: requires `SURVIVOR_SALT_SECRET` env var in `.env`/`.env.test`.
