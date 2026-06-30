@@ -37,6 +37,8 @@ function AssistantInner() {
     messages,
     status,
     send,
+    startInterview,
+    readNotices,
     pendingProposal,
     confirmProposal,
     discardProposal,
@@ -93,16 +95,32 @@ function AssistantInner() {
             )}
           </>
         ) : (
-          <p className="subtle">
-            Describe a record in your own words and I&apos;ll help you save it. This chat isn&apos;t
-            stored — only the records you choose to save are kept, encrypted on your device.
-          </p>
+          <>
+            <p className="subtle">
+              Describe a record in your own words and I&apos;ll help you save it. This chat isn&apos;t
+              stored — only the records you choose to save are kept, encrypted on your device.
+            </p>
+            <button
+              type="button"
+              className="linkbtn"
+              onClick={startInterview}
+              disabled={status === "streaming" || status === "submitted"}
+            >
+              Help me find what&apos;s missing
+            </button>
+          </>
         )}
 
         {loadError && <p className="error">{loadError}</p>}
 
         {messages.map((m) => (
           <MessageText key={m.id} message={m} />
+        ))}
+
+        {readNotices.map((n, i) => (
+          <p key={i} className="subtle">
+            {n}
+          </p>
         ))}
 
         {pendingProposal && (

@@ -5,6 +5,8 @@ import {
   RECORD_SCHEMA_BY_RESOURCE,
   toPlaintext,
   buildProposeRecordJsonSchema,
+  READ_RECORD_TYPE_KEYS,
+  buildReadRecordsJsonSchema,
   MissingRequiredFieldError,
   parseToFields,
   type RecordTypeKey,
@@ -140,5 +142,25 @@ describe("parseToFields", () => {
     expect(parseToFields("account", "null")).toEqual({});
     expect(parseToFields("bill", "42")).toEqual({});
     expect(parseToFields("loan", "true")).toEqual({});
+  });
+});
+
+describe("buildReadRecordsJsonSchema", () => {
+  it("requires a `types` array whose items enum the five record keys", () => {
+    const schema = buildReadRecordsJsonSchema() as {
+      required: string[];
+      properties: { types: { type: string; items: { enum: string[] } } };
+    };
+    expect(schema.required).toContain("types");
+    expect(schema.properties.types.type).toBe("array");
+    expect(schema.properties.types.items.enum.sort()).toEqual(
+      ["account", "beneficiary", "bill", "loan", "vault"].sort(),
+    );
+  });
+
+  it("READ_RECORD_TYPE_KEYS lists every record type key", () => {
+    expect([...READ_RECORD_TYPE_KEYS].sort()).toEqual(
+      ["account", "beneficiary", "bill", "loan", "vault"].sort(),
+    );
   });
 });

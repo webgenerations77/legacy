@@ -57,3 +57,23 @@ expected (the saved notice is UI, not a model turn).
 
 When both pass, Sprint 3 has only **Slice C (Q&A / guidance + proactive interview)**
 left — a fresh brainstorm→spec→plan→build cycle.
+
+---
+
+## Slice C — Q&A + proactive interview (pending live smoke)
+
+Requires: `npm run dev`, dev DB, a logged-in user with the vault unlocked, real API tokens.
+
+- [ ] Open `/assistant` (no query params). Ask "what's my total debt?" → a
+      "🔓 Read your loan or mortgage…" notice appears and the answer reflects
+      only your loans (not other categories).
+- [ ] Ask about a category with no records → assistant says you have none, does
+      not invent any.
+- [ ] Click "Help me find what's missing" → the assistant names real gaps from
+      your readiness (matches the `/readiness` page) and offers to add one.
+- [ ] Accept a suggestion → ProposalCard → Save → record appears on its own page.
+- [ ] DevTools Network: the chat route response is a stream; on Save only
+      `{ ciphertext, iv }` leaves; no record plaintext is persisted by
+      `/api/assistant/chat` (it returns a stream, stores nothing).
+- [ ] Edit mode still works: open `/assistant?type=loans&id=<id>` → pinned banner,
+      no interview button, Save fires PUT.

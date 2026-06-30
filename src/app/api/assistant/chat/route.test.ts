@@ -77,4 +77,25 @@ describe("POST /api/assistant/chat", () => {
     expect(arg.system).toContain("editing an existing loan");
     expect(arg.system).toContain("Wells Fargo");
   });
+
+  it("wires the readRecords tool alongside proposeRecord", async () => {
+    getSessionUserId.mockResolvedValue("user-1");
+    await POST(postReq({ messages: [] }));
+    const arg = streamTextMock.mock.calls[0][0] as {
+      tools: { proposeRecord?: unknown; readRecords?: unknown };
+    };
+    expect(arg.tools.proposeRecord).toBeDefined();
+    expect(arg.tools.readRecords).toBeDefined();
+  });
+
+  it("appends the readiness summary to the system prompt when readinessDigest is present", async () => {
+    getSessionUserId.mockResolvedValue("user-1");
+    await POST(postReq({
+      messages: [],
+      readinessDigest: { overall: 25, categories: [{ key: "loans", label: "Loans", status: "empty" }] },
+    }));
+    const arg = streamTextMock.mock.calls[0][0] as { system: string };
+    expect(arg.system).toContain("Readiness summary");
+    expect(arg.system).toContain("Loans");
+  });
 });
