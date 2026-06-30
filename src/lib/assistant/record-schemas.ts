@@ -257,3 +257,23 @@ export function buildProposeRecordJsonSchema(): JSONSchema7 {
     oneOf: RECORD_SCHEMAS.map(branch),
   };
 }
+
+export const READ_RECORD_TYPE_KEYS: readonly RecordTypeKey[] = RECORD_SCHEMAS.map(
+  (s) => s.key,
+);
+
+export function buildReadRecordsJsonSchema(): JSONSchema7 {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      types: {
+        type: "array",
+        description:
+          "The record categories to read in order to answer the user's question. Include ONLY the categories the question needs.",
+        items: { type: "string", enum: [...READ_RECORD_TYPE_KEYS] },
+      },
+    },
+    required: ["types"],
+  };
+}
