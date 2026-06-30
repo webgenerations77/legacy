@@ -87,9 +87,15 @@ describe("/api/survivor/claim", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.escrow).toEqual({ ciphertext: "EC", iv: "EI" });
-    expect(data.records.documents).toEqual([
-      { id: "d1", metaCiphertext: "dmc", metaIv: "dmi", createdAt: new Date(0).toISOString() },
-    ]);
+    expect(data.records).toEqual({
+      items: [{ id: "v1", ciphertext: "vc", iv: "vi" }],
+      accounts: [{ id: "a1", ciphertext: "ac", iv: "ai" }],
+      bills: [],
+      loans: [],
+      beneficiaries: [],
+      documents: [{ id: "d1", metaCiphertext: "dmc", metaIv: "dmi", createdAt: new Date(0).toISOString() }],
+      obituary: { intake: { subjectName: "X" }, draft: "An obituary" },
+    });
     expect(JSON.stringify(data.records.documents)).not.toContain("contentCiphertext");
     expect(verifyVerifier).toHaveBeenCalledWith("right", "hash");
   });
