@@ -5,6 +5,7 @@ import {
   toPlaintext,
   buildProposeRecordJsonSchema,
   MissingRequiredFieldError,
+  type RecordTypeKey,
 } from "@/lib/assistant/record-schemas";
 import { parseAccount } from "@/lib/account";
 import { parseBill } from "@/lib/bill";
@@ -27,7 +28,7 @@ describe("record-schemas", () => {
   });
 
   it("toPlaintext('account') round-trips through serializeAccount with defaults", () => {
-    const json = toPlaintext("account", { institution: "Chase", type: "Checking", balance: "100" });
+    const json = toPlaintext("account", { institution: "Chase", accountType: "Checking", balance: "100" });
     expect(parseAccount(json)).toEqual({
       type: "Checking",
       institution: "Chase",
@@ -39,7 +40,7 @@ describe("record-schemas", () => {
   });
 
   it("toPlaintext('account') falls back to 'Other' for an unknown type value", () => {
-    const json = toPlaintext("account", { institution: "Chase", type: "Nonsense" });
+    const json = toPlaintext("account", { institution: "Chase", accountType: "Nonsense" });
     expect(parseAccount(json).type).toBe("Other");
   });
 
@@ -62,6 +63,10 @@ describe("record-schemas", () => {
   it("throws MissingRequiredFieldError when a required field is missing or blank", () => {
     expect(() => toPlaintext("account", {})).toThrowError(MissingRequiredFieldError);
     expect(() => toPlaintext("account", { institution: "   " })).toThrowError(MissingRequiredFieldError);
+  });
+
+  it("throws MissingRequiredFieldError for vault and provides field name", () => {
+    expect.assertions(2);
     try {
       toPlaintext("vault", {});
     } catch (e) {
@@ -80,5 +85,11 @@ describe("record-schemas", () => {
     expect(account.required).toContain("institution");
     const vault = schema.oneOf.find((b) => b.properties.type.enum[0] === "vault")!;
     expect(vault.required).toContain("note");
+  });
+
+  it("captures account type through the downstream destructuring pattern", () => {
+    const input = { type: "account", accountType: "Savings", institution: "Chase" };
+    const { type, ...fields } = input;
+    expect(parseAccount(toPlaintext(type as RecordTypeKey, fields)).type).toBe("Savings");
   });
 });

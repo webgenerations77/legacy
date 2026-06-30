@@ -46,7 +46,7 @@ export const RECORD_SCHEMAS: readonly RecordTypeSchema[] = [
     resource: "accounts",
     fields: [
       { key: "institution", label: "Institution", required: true, kind: "text" },
-      { key: "type", label: "Account type", required: false, kind: "text", options: ACCOUNT_TYPES },
+      { key: "accountType", label: "Account type", required: false, kind: "text", options: ACCOUNT_TYPES },
       { key: "nickname", label: "Nickname", required: false, kind: "text" },
       { key: "accountNumber", label: "Account number", required: false, kind: "text" },
       { key: "balance", label: "Balance", required: false, kind: "number" },
@@ -136,7 +136,7 @@ function assertRequired(schema: RecordTypeSchema, fields: ProposedFields): void 
   for (const f of schema.fields) {
     if (!f.required) continue;
     const v = fields[f.key];
-    if (v === undefined || v === null || (typeof v === "string" && v.trim() === "")) {
+    if (v === undefined || (typeof v === "string" && v.trim() === "")) {
       throw new MissingRequiredFieldError(f.key);
     }
   }
@@ -151,7 +151,7 @@ export function toPlaintext(type: RecordTypeKey, fields: ProposedFields): string
       return str(fields, "note");
     case "account": {
       const a: Account = {
-        type: pick(fields, "type", ACCOUNT_TYPES, "Other"),
+        type: pick(fields, "accountType", ACCOUNT_TYPES, "Other"),
         institution: str(fields, "institution"),
         nickname: str(fields, "nickname"),
         accountNumber: str(fields, "accountNumber"),
@@ -217,10 +217,7 @@ function branch(schema: RecordTypeSchema): JSONSchema7 {
   };
   const required: string[] = ["type"];
   for (const f of schema.fields) {
-    // Don't overwrite the discriminant 'type' field
-    if (f.key !== "type") {
-      properties[f.key] = fieldToJsonSchema(f);
-    }
+    properties[f.key] = fieldToJsonSchema(f);
     if (f.required) required.push(f.key);
   }
   return { type: "object", additionalProperties: false, properties, required };
