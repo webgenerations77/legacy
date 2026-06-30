@@ -31,6 +31,8 @@ import {
   deriveSurvivorAuthVerifier,
   recoverMasterKey,
 } from "@/lib/survivor-crypto";
+import { encryptBytes, decryptBytes } from "@/lib/crypto";
+import { serializeMeta, parseMeta, type DocumentMeta } from "@/lib/document";
 
 const BASE = "http://localhost:3000";
 // Inspect the DEV database directly (the server writes here). vitest.setup loads
@@ -657,5 +659,105 @@ describe("walking skeleton (live)", () => {
 
     // cleanup
     await db.user.delete({ where: { email: sEmail } });
+  }, 60_000);
+
+  it("stores an encrypted document and a survivor downloads it (no plaintext stored)", async () => {
+    const dEmail = `e2e-doc-${Date.now()}@example.com`;
+    const pass = "document-owner-passphrase-123";
+
+    // register + login as owner
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(pass, salt);
+    const av = await deriveAuthVerifier(mk, pass);
+    await fetch(`${BASE}/api/auth/register`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: dEmail, salt, authVerifier: av }),
+    });
+    const login = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: dEmail, authVerifier: av }),
+    });
+    const cookie = login.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+
+    // unauthenticated list is rejected
+    expect((await fetch(`${BASE}/api/documents`)).status).toBe(401);
+
+    // encrypt a small binary "file" (a fake PDF header + bytes) + its metadata
+    const fileBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0, 1, 2, 250, 255, 128, 7, 13]);
+    const SECRET_NAME = "last-will-and-testament.pdf";
+    const meta: DocumentMeta = { filename: SECRET_NAME, contentType: "application/pdf", size: fileBytes.length };
+    const content = await encryptBytes(mk, fileBytes);
+    const metaBlob = await encryptItem(mk, serializeMeta(meta));
+    const add = await fetch(`${BASE}/api/documents`, {
+      method: "POST", headers: { ...json, cookie },
+      body: JSON.stringify({
+        metaCiphertext: metaBlob.ciphertext, metaIv: metaBlob.iv,
+        contentCiphertext: content.ciphertext, contentIv: content.iv,
+      }),
+    });
+    expect(add.status).toBe(201);
+    const { id: docId } = await add.json();
+
+    // owner list returns metadata only; owner content download round-trips byte-for-byte
+    const listRes = await fetch(`${BASE}/api/documents`, { headers: { cookie } });
+    const { documents } = await listRes.json();
+    expect(documents).toHaveLength(1);
+    expect(JSON.stringify(documents)).not.toContain("contentCiphertext");
+    expect(parseMeta(await decryptItem(mk, documents[0].metaCiphertext, documents[0].metaIv))).toEqual(meta);
+
+    const ownerContent = await fetch(`${BASE}/api/documents/${docId}`, { headers: { cookie } });
+    expect(ownerContent.status).toBe(200);
+    const oc = await ownerContent.json();
+    expect(Array.from(await decryptBytes(mk, oc.contentCiphertext, oc.contentIv))).toEqual(Array.from(fileBytes));
+
+    // --- ARM survivor access, then a survivor recovers + downloads the document ---
+    const arm = await buildSurvivorEscrow(mk);
+    await fetch(`${BASE}/api/survivor`, {
+      method: "POST", headers: { ...json, cookie },
+      body: JSON.stringify({
+        survivorSalt: arm.survivorSalt, survivorAuthVerifier: arm.survivorAuthVerifier,
+        escrowCiphertext: arm.escrowCiphertext, escrowIv: arm.escrowIv,
+      }),
+    });
+
+    const { salt: survivorSalt } = await (await fetch(`${BASE}/api/survivor/salt`, {
+      method: "POST", headers: json, body: JSON.stringify({ email: dEmail }),
+    })).json();
+    const verifier = await deriveSurvivorAuthVerifier(arm.recoveryCode, survivorSalt);
+
+    const claim = await (await fetch(`${BASE}/api/survivor/claim`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: dEmail, survivorAuthVerifier: verifier }),
+    })).json();
+    expect(claim.records.documents).toHaveLength(1);
+    expect(JSON.stringify(claim.records.documents)).not.toContain("contentCiphertext");
+    const recovered = await recoverMasterKey(arm.recoveryCode, survivorSalt, claim.escrow.ciphertext, claim.escrow.iv);
+    const survivorDocId = claim.records.documents[0].id;
+
+    // wrong verifier is rejected at the survivor content endpoint
+    const badDoc = await fetch(`${BASE}/api/survivor/document`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: dEmail, survivorAuthVerifier: "wrong", documentId: survivorDocId }),
+    });
+    expect(badDoc.status).toBe(401);
+
+    // correct survivor fetch returns content that decrypts to the original bytes
+    const survDoc = await fetch(`${BASE}/api/survivor/document`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: dEmail, survivorAuthVerifier: verifier, documentId: survivorDocId }),
+    });
+    expect(survDoc.status).toBe(200);
+    const sc = await survDoc.json();
+    expect(Array.from(await decryptBytes(recovered, sc.contentCiphertext, sc.contentIv))).toEqual(Array.from(fileBytes));
+
+    // --- ZERO-KNOWLEDGE: stored row leaks neither the filename nor the file bytes ---
+    const row = await db.document.findFirst({ where: { user: { email: dEmail } } });
+    expect(row).toBeTruthy();
+    expect(row!.metaCiphertext).not.toContain(SECRET_NAME);
+    expect(row!.metaCiphertext).not.toContain("last-will");
+    expect(row!.contentCiphertext).not.toContain("%PDF");
+
+    // cleanup
+    await db.user.delete({ where: { email: dEmail } });
   }, 60_000);
 });
