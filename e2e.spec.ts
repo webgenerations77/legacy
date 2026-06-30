@@ -26,6 +26,11 @@ import {
   parseReadinessState,
   type ReadinessState,
 } from "@/lib/readiness";
+import {
+  buildSurvivorEscrow,
+  deriveSurvivorAuthVerifier,
+  recoverMasterKey,
+} from "@/lib/survivor-crypto";
 
 const BASE = "http://localhost:3000";
 // Inspect the DEV database directly (the server writes here). vitest.setup loads
@@ -551,5 +556,100 @@ describe("walking skeleton (live)", () => {
 
     // cleanup
     await db.user.delete({ where: { email: rEmail } });
+  }, 60_000);
+
+  it("arms survivor access and a survivor recovers the vault (no plaintext stored)", async () => {
+    const sEmail = `e2e-survivor-${Date.now()}@example.com`;
+    const pass = "survivor-owner-passphrase-123";
+
+    // register + login as owner
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(pass, salt);
+    const av = await deriveAuthVerifier(mk, pass);
+    await fetch(`${BASE}/api/auth/register`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: sEmail, salt, authVerifier: av }),
+    });
+    const login = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: sEmail, authVerifier: av }),
+    });
+    const cookie = login.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+
+    // owner stores one encrypted beneficiary
+    const bene: Beneficiary = {
+      fullName: "Survivor Heir", relationship: "Child", email: "heir@example.com",
+      phone: "555-9000", mailingAddress: "1 Elm St", allocation: "100", notes: "Everything",
+    };
+    const benBlob = await encryptItem(mk, serializeBeneficiary(bene));
+    await fetch(`${BASE}/api/beneficiaries`, {
+      method: "POST", headers: { ...json, cookie }, body: JSON.stringify(benBlob),
+    });
+
+    // --- ARM: wrap the master key client-side, send only salt/verifier/escrow ---
+    const arm = await buildSurvivorEscrow(mk);
+    const armRes = await fetch(`${BASE}/api/survivor`, {
+      method: "POST", headers: { ...json, cookie },
+      body: JSON.stringify({
+        survivorSalt: arm.survivorSalt,
+        survivorAuthVerifier: arm.survivorAuthVerifier,
+        escrowCiphertext: arm.escrowCiphertext,
+        escrowIv: arm.escrowIv,
+      }),
+    });
+    expect(armRes.status).toBe(201);
+
+    // arming requires auth
+    const noAuthArm = await fetch(`${BASE}/api/survivor`, {
+      method: "POST", headers: json, body: JSON.stringify({}),
+    });
+    expect(noAuthArm.status).toBe(401);
+
+    // --- SURVIVOR (no session): fetch salt, derive verifier, claim ---
+    const saltRes = await fetch(`${BASE}/api/survivor/salt`, {
+      method: "POST", headers: json, body: JSON.stringify({ email: sEmail }),
+    });
+    const { salt: survivorSalt } = await saltRes.json();
+    expect(survivorSalt).toBe(arm.survivorSalt);
+
+    const verifier = await deriveSurvivorAuthVerifier(arm.recoveryCode, survivorSalt);
+    const claimRes = await fetch(`${BASE}/api/survivor/claim`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: sEmail, survivorAuthVerifier: verifier }),
+    });
+    expect(claimRes.status).toBe(200);
+    const claim = await claimRes.json();
+
+    // a wrong code is rejected with 401
+    const badVerifier = await deriveSurvivorAuthVerifier("00000-00000-00000-00000", survivorSalt);
+    const badClaim = await fetch(`${BASE}/api/survivor/claim`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: sEmail, survivorAuthVerifier: badVerifier }),
+    });
+    expect(badClaim.status).toBe(401);
+
+    // --- RECOVER the master key and decrypt the beneficiary ---
+    const recovered = await recoverMasterKey(
+      arm.recoveryCode, survivorSalt, claim.escrow.ciphertext, claim.escrow.iv,
+    );
+    const back = parseBeneficiary(
+      await decryptItem(recovered, claim.records.beneficiaries[0].ciphertext,
+        claim.records.beneficiaries[0].iv),
+    );
+    expect(back).toEqual(bene);
+
+    // --- ZERO-KNOWLEDGE: stored survivor row holds only opaque blobs + bcrypt hash ---
+    const user = await db.user.findUnique({
+      where: { email: sEmail },
+      include: { survivorAccess: true },
+    });
+    const sa = user!.survivorAccess!;
+    expect(sa.survivorAuthVerifierHash.startsWith("$2")).toBe(true);
+    expect(sa.survivorAuthVerifierHash).not.toBe(arm.survivorAuthVerifier);
+    expect(sa.escrowCiphertext).not.toContain("Survivor Heir");
+    expect(sa.escrowCiphertext).not.toContain(arm.recoveryCode);
+
+    // cleanup
+    await db.user.delete({ where: { email: sEmail } });
   }, 60_000);
 });
