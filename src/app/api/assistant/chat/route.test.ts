@@ -65,4 +65,16 @@ describe("POST /api/assistant/chat", () => {
     expect(typeof arg.system).toBe("string");
     expect(arg.tools.proposeRecord).toBeDefined();
   });
+
+  it("appends editing context to the system prompt when editContext is present", async () => {
+    getSessionUserId.mockResolvedValue("user-1");
+    await POST(postReq({
+      messages: [],
+      editContext: { type: "loan", currentFields: { lender: "Wells Fargo", interestRate: "6.1" } },
+    }));
+    expect(streamTextMock).toHaveBeenCalledTimes(1);
+    const arg = streamTextMock.mock.calls[0][0] as { system: string };
+    expect(arg.system).toContain("editing an existing loan");
+    expect(arg.system).toContain("Wells Fargo");
+  });
 });

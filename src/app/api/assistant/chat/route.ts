@@ -34,9 +34,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "The assistant is not configured." }, { status: 500 });
   }
 
+  const editContext = body.editContext as
+    | { type?: string; currentFields?: Record<string, unknown> }
+    | undefined;
+
+  let system = buildAssistantSystemPrompt();
+  if (editContext?.type && editContext.currentFields) {
+    system +=
+      `\n\nThe user is editing an existing ${editContext.type} record. ` +
+      `Its current values are:\n${JSON.stringify(editContext.currentFields)}\n` +
+      `When they describe a change, call proposeRecord with the SAME record type, ` +
+      `applying their change and preserving every field they did not mention.`;
+  }
+
   const result = streamText({
     model: anthropic(MODEL_ID),
-    system: buildAssistantSystemPrompt(),
+    system,
     messages: await convertToModelMessages(messages),
     tools: { proposeRecord },
     // Errors after the streamed 200 begins can't change the status code; log
