@@ -5,6 +5,7 @@ import {
   toPlaintext,
   buildProposeRecordJsonSchema,
   MissingRequiredFieldError,
+  parseToFields,
   type RecordTypeKey,
 } from "@/lib/assistant/record-schemas";
 import { parseAccount } from "@/lib/account";
@@ -91,5 +92,36 @@ describe("record-schemas", () => {
     const input = { type: "account", accountType: "Savings", institution: "Chase" };
     const { type, ...fields } = input;
     expect(parseAccount(toPlaintext(type as RecordTypeKey, fields)).type).toBe("Savings");
+  });
+});
+
+describe("parseToFields", () => {
+  it("round-trips with toPlaintext for an account (incl. type → accountType)", () => {
+    const fields = { institution: "Chase", accountType: "Savings", balance: "100" };
+    const pt = toPlaintext("account", fields);
+    const back = parseToFields("account", pt);
+    expect(back.institution).toBe("Chase");
+    expect(back.accountType).toBe("Savings"); // domain `.type` mapped back to field key
+    expect(back.balance).toBe("100");
+  });
+
+  it("round-trips a bill's boolean autoPay", () => {
+    const pt = toPlaintext("bill", { name: "Netflix", autoPay: true });
+    const back = parseToFields("bill", pt);
+    expect(back.name).toBe("Netflix");
+    expect(back.autoPay).toBe(true);
+  });
+
+  it("maps vault plaintext to a note field", () => {
+    expect(parseToFields("vault", "the safe code is 1234")).toEqual({ note: "the safe code is 1234" });
+  });
+
+  it("round-trips loan and beneficiary required fields", () => {
+    expect(parseToFields("loan", toPlaintext("loan", { lender: "Wells Fargo" })).lender).toBe("Wells Fargo");
+    expect(parseToFields("beneficiary", toPlaintext("beneficiary", { fullName: "Sam Lee" })).fullName).toBe("Sam Lee");
+  });
+
+  it("degrades to {} on malformed non-vault plaintext rather than throwing", () => {
+    expect(parseToFields("account", "not json{")).toEqual({});
   });
 });
