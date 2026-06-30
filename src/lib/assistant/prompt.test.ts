@@ -15,8 +15,18 @@ describe("buildAssistantSystemPrompt", () => {
     expect(prompt.toLowerCase()).toContain("one record at a time");
   });
 
-  it("lists at least one required field and states it never sees saved records", () => {
-    expect(prompt).toContain("institution");
-    expect(prompt.toLowerCase()).toContain("never see");
+  it("states records are encrypted and must be read via readRecords, not guessed", () => {
+    expect(prompt).toContain("institution"); // still lists a required field
+    expect(prompt).toContain("readRecords");
+    const lower = prompt.toLowerCase();
+    expect(lower).toContain("encrypted");
+    expect(lower).toContain("only the categories");
+    expect(lower).toContain("never guess");
+  });
+
+  it("describes the proactive readiness-summary interview", () => {
+    const lower = prompt.toLowerCase();
+    expect(lower).toContain("readiness summary");
+    expect(lower).toContain("what to add next");
   });
 });
