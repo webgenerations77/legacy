@@ -22,6 +22,14 @@ function b64ToBytes(b64: string): CryptoBytes {
   return out;
 }
 
+/** Public wrappers so callers can wrap/unwrap raw key bytes as a base64 string. */
+export function bytesToBase64(bytes: Uint8Array): string {
+  return bytesToB64(bytes);
+}
+export function base64ToBytes(b64: string): CryptoBytes {
+  return b64ToBytes(b64);
+}
+
 function randomBytes(n: number): CryptoBytes {
   const b = new Uint8Array(n);
   crypto.getRandomValues(b);

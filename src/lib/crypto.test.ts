@@ -49,3 +49,19 @@ describe("crypto core", () => {
     expect(v1a).not.toBe(v2);
   });
 });
+
+import { bytesToBase64, base64ToBytes } from "./crypto";
+
+describe("base64 helpers", () => {
+  it("round-trips arbitrary bytes", () => {
+    const bytes = new Uint8Array([0, 1, 2, 250, 251, 255, 128, 7]);
+    const b64 = bytesToBase64(bytes);
+    expect(typeof b64).toBe("string");
+    expect(Array.from(base64ToBytes(b64))).toEqual(Array.from(bytes));
+  });
+
+  it("base64ToBytes is backed by a real ArrayBuffer (usable by WebCrypto)", () => {
+    const out = base64ToBytes(bytesToBase64(new Uint8Array([9, 9, 9])));
+    expect(out.buffer).toBeInstanceOf(ArrayBuffer);
+  });
+});
