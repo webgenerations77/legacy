@@ -3,18 +3,18 @@ import { prisma } from "@/lib/db";
 import { verifyVerifier } from "@/lib/auth";
 import { readJsonBody } from "@/lib/http";
 
-const DENIED = NextResponse.json({ error: "Could not unlock." }, { status: 401 });
+const denied = () => NextResponse.json({ error: "Could not unlock." }, { status: 401 });
 const blobSelect = { select: { id: true, ciphertext: true, iv: true }, orderBy: { createdAt: "desc" } } as const;
 
 export async function POST(req: Request) {
   const body = await readJsonBody(req);
-  if (body instanceof NextResponse) return body;
+  if (body instanceof NextResponse) return denied();
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const survivorAuthVerifier =
     typeof body.survivorAuthVerifier === "string" ? body.survivorAuthVerifier : "";
   if (!email || !survivorAuthVerifier) {
-    return NextResponse.json({ error: "Could not unlock." }, { status: 401 });
+    return denied();
   }
 
   const user = await prisma.user.findUnique({
@@ -30,9 +30,9 @@ export async function POST(req: Request) {
     },
   });
 
-  if (!user || !user.survivorAccess) return DENIED;
+  if (!user || !user.survivorAccess) return denied();
   const ok = await verifyVerifier(survivorAuthVerifier, user.survivorAccess.survivorAuthVerifierHash);
-  if (!ok) return DENIED;
+  if (!ok) return denied();
 
   return NextResponse.json({
     escrow: {

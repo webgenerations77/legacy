@@ -42,7 +42,33 @@ beforeEach(() => {
 describe("/api/survivor/claim", () => {
   it("401 when no survivor access for that email", async () => {
     findUnique.mockResolvedValue(null);
-    expect((await POST(req({ email: "a@b.com", survivorAuthVerifier: "v" }))).status).toBe(401);
+    const res = await POST(req({ email: "a@b.com", survivorAuthVerifier: "v" }));
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "Could not unlock." });
+  });
+
+  it("401 with generic body when fields are missing or empty", async () => {
+    const cases = [
+      req({}),
+      req({ email: "", survivorAuthVerifier: "x" }),
+    ];
+    for (const r of cases) {
+      const res = await POST(r);
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: "Could not unlock." });
+    }
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+
+  it("401 with generic body when body is malformed JSON", async () => {
+    const malformed = new Request("http://localhost/api/survivor/claim", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "not json",
+    });
+    const res = await POST(malformed);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "Could not unlock." });
   });
 
   it("401 when the verifier does not match", async () => {
