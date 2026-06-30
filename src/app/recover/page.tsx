@@ -4,11 +4,14 @@ import { useState } from "react";
 import { BrandHeader } from "@/components/Logo";
 import { api, type SurvivorRecords } from "@/lib/api-client";
 import { deriveSurvivorAuthVerifier, recoverMasterKey } from "@/lib/survivor-crypto";
-import { decryptItem, type CryptoBytes } from "@/lib/crypto";
+import { decryptItem, decryptBytes, type CryptoBytes } from "@/lib/crypto";
 import { parseAccount, type Account } from "@/lib/account";
 import { parseBill, type Bill } from "@/lib/bill";
 import { parseLoan, type Loan } from "@/lib/loan";
 import { parseBeneficiary, type Beneficiary } from "@/lib/beneficiary";
+import { parseMeta, type DocumentMeta } from "@/lib/document";
+
+type DocEntry = { id: string; meta: DocumentMeta };
 
 type Decrypted = {
   accounts: Account[];
@@ -16,8 +19,11 @@ type Decrypted = {
   loans: Loan[];
   beneficiaries: Beneficiary[];
   notes: string[];
+  documents: DocEntry[];
   obituary: string | null;
 };
+
+type Session = { email: string; verifier: string; mk: CryptoBytes };
 
 async function decryptAll(mk: CryptoBytes, records: SurvivorRecords): Promise<Decrypted> {
   const tryParse = async <T,>(
@@ -42,12 +48,21 @@ async function decryptAll(mk: CryptoBytes, records: SurvivorRecords): Promise<De
       // skip
     }
   }
+  const documents: DocEntry[] = [];
+  for (const d of records.documents) {
+    try {
+      documents.push({ id: d.id, meta: parseMeta(await decryptItem(mk, d.metaCiphertext, d.metaIv)) });
+    } catch {
+      // skip any document whose metadata fails to decrypt
+    }
+  }
   return {
     accounts: await tryParse(records.accounts, parseAccount),
     bills: await tryParse(records.bills, parseBill),
     loans: await tryParse(records.loans, parseLoan),
     beneficiaries: await tryParse(records.beneficiaries, parseBeneficiary),
     notes,
+    documents,
     obituary: records.obituary?.draft ?? null,
   };
 }
@@ -58,6 +73,7 @@ export default function RecoverPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<Decrypted | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -75,11 +91,36 @@ export default function RecoverPage() {
         claim.escrow.ciphertext,
         claim.escrow.iv,
       );
+      setSession({ email: email.trim().toLowerCase(), verifier, mk });
       setData(await decryptAll(mk, claim.records));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function downloadDoc(doc: DocEntry) {
+    if (!session) return;
+    setError("");
+    try {
+      const { contentCiphertext, contentIv } = await api.survivorDocument(
+        session.email,
+        session.verifier,
+        doc.id,
+      );
+      const bytes = await decryptBytes(session.mk, contentCiphertext, contentIv);
+      const blob = new Blob([bytes], {
+        type: doc.meta.contentType || "application/octet-stream",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.meta.filename || "document";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("We couldn't open that file. Please try again.");
     }
   }
 
@@ -105,6 +146,7 @@ export default function RecoverPage() {
             <button type="button" onClick={() => window.print()}>Print</button>
             <button type="button" onClick={download}>Download</button>
           </div>
+          {error && <p className="error">{error}</p>}
 
           {data.notes.length > 0 && (
             <section>
@@ -165,6 +207,23 @@ export default function RecoverPage() {
                   {b.phone && <div className="meta">{b.phone}</div>}
                   {b.mailingAddress && <div className="meta">{b.mailingAddress}</div>}
                   {b.notes && <div className="notes">{b.notes}</div>}
+                </div>
+              ))}
+            </section>
+          )}
+
+          {data.documents.length > 0 && (
+            <section>
+              <h2>Documents</h2>
+              {data.documents.map((d) => (
+                <div className="item" key={d.id}>
+                  <strong>{d.meta.filename || "Untitled"}</strong>
+                  <div className="meta">{d.meta.contentType || "file"}</div>
+                  <div className="row no-print">
+                    <button type="button" className="linkbtn" onClick={() => downloadDoc(d)}>
+                      Download
+                    </button>
+                  </div>
                 </div>
               ))}
             </section>
