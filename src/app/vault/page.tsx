@@ -4,9 +4,10 @@ import { useState } from "react";
 import { LegacyMark } from "@/components/Logo";
 import { AppNav } from "@/components/AppNav";
 import { useEncryptedRecords } from "@/app/providers/useEncryptedRecords";
+import { RecordActions } from "@/components/RecordActions";
 
 export default function VaultPage() {
-  const { items, error, loaded, add, masterKey } = useEncryptedRecords<string>({
+  const { items, error, loaded, add, remove, masterKey } = useEncryptedRecords<string>({
     resource: "vault",
     listKey: "items",
     serialize: (s) => s,
@@ -48,6 +49,7 @@ export default function VaultPage() {
         {items.map((it) => (
           <div className="item" key={it.id}>
             {it.value ?? "We couldn't unlock this item."}
+            <RecordActions resource="vault" id={it.id} onDelete={() => remove(it.id)} />
           </div>
         ))}
       </div>

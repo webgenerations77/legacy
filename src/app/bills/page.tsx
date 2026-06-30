@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppNav } from "@/components/AppNav";
 import { LegacyMark } from "@/components/Logo";
 import { useEncryptedRecords } from "@/app/providers/useEncryptedRecords";
+import { RecordActions } from "@/components/RecordActions";
 import {
   type Bill,
   type Frequency,
@@ -39,7 +40,7 @@ const EMPTY: Bill = {
 };
 
 export default function BillsPage() {
-  const { items, error, loaded, add, masterKey } = useEncryptedRecords<Bill>({
+  const { items, error, loaded, add, remove, masterKey } = useEncryptedRecords<Bill>({
     resource: "bills",
     listKey: "bills",
     serialize: serializeBill,
@@ -175,20 +176,24 @@ export default function BillsPage() {
           <p className="subtle">We couldn&apos;t unlock some bills.</p>
         )}
 
-        {sorted.map((b, i) => (
-          <div className="item" key={i}>
-            <strong>{b.name || "Untitled bill"}</strong>
-            <div className="meta">
-              {b.category} · {b.frequency}
-              {b.nextDueDate ? ` · due ${b.nextDueDate}` : ""}
+        {sorted.map((b, i) => {
+          const itemId = items.find((it) => it.value === b)?.id ?? "";
+          return (
+            <div className="item" key={itemId || i}>
+              <strong>{b.name || "Untitled bill"}</strong>
+              <div className="meta">
+                {b.category} · {b.frequency}
+                {b.nextDueDate ? ` · due ${b.nextDueDate}` : ""}
+              </div>
+              {b.amount && <div className="meta">Amount: {b.amount}</div>}
+              {b.autoPay && <div className="meta">Auto-pay</div>}
+              {b.paymentMethod && <div className="meta">{b.paymentMethod}</div>}
+              {b.website && <div className="meta">{b.website}</div>}
+              {b.notes && <div className="notes">{b.notes}</div>}
+              <RecordActions resource="bills" id={itemId} onDelete={() => remove(itemId)} />
             </div>
-            {b.amount && <div className="meta">Amount: {b.amount}</div>}
-            {b.autoPay && <div className="meta">Auto-pay</div>}
-            {b.paymentMethod && <div className="meta">{b.paymentMethod}</div>}
-            {b.website && <div className="meta">{b.website}</div>}
-            {b.notes && <div className="notes">{b.notes}</div>}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppNav } from "@/components/AppNav";
 import { LegacyMark } from "@/components/Logo";
 import { useEncryptedRecords } from "@/app/providers/useEncryptedRecords";
+import { RecordActions } from "@/components/RecordActions";
 import {
   type Account,
   type AccountType,
@@ -24,7 +25,7 @@ const EMPTY: Account = {
 };
 
 export default function AccountsPage() {
-  const { items, error, loaded, add, masterKey } = useEncryptedRecords<Account>({
+  const { items, error, loaded, add, remove, masterKey } = useEncryptedRecords<Account>({
     resource: "accounts",
     listKey: "accounts",
     serialize: serializeAccount,
@@ -130,6 +131,7 @@ export default function AccountsPage() {
             ) : (
               "We couldn't unlock this account."
             )}
+            <RecordActions resource="accounts" id={it.id} onDelete={() => remove(it.id)} />
           </div>
         ))}
       </div>

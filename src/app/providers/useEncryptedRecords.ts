@@ -90,5 +90,20 @@ export function useEncryptedRecords<T>(opts: {
     [masterKey, resource, load, saveError],
   );
 
-  return { items, error, loaded, add, masterKey };
+  const remove = useCallback(
+    async (id: string): Promise<boolean> => {
+      setError("");
+      try {
+        await api.deleteRecord(resource, id);
+        await load();
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "We couldn't delete that.");
+        return false;
+      }
+    },
+    [resource, load],
+  );
+
+  return { items, error, loaded, add, remove, masterKey };
 }

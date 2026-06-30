@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppNav } from "@/components/AppNav";
 import { LegacyMark } from "@/components/Logo";
 import { useEncryptedRecords } from "@/app/providers/useEncryptedRecords";
+import { RecordActions } from "@/components/RecordActions";
 import {
   type Beneficiary,
   type BeneficiaryRelationship,
@@ -39,7 +40,7 @@ const EMPTY: Beneficiary = {
 const pct = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
 
 export default function BeneficiariesPage() {
-  const { items, error, loaded, add, masterKey } = useEncryptedRecords<Beneficiary>({
+  const { items, error, loaded, add, remove, masterKey } = useEncryptedRecords<Beneficiary>({
     resource: "beneficiaries",
     listKey: "beneficiaries",
     serialize: serializeBeneficiary,
@@ -158,19 +159,23 @@ export default function BeneficiariesPage() {
           <p className="subtle">We couldn&apos;t unlock some beneficiaries.</p>
         )}
 
-        {sorted.map((b, i) => (
-          <div className="item" key={i}>
-            <strong>{b.fullName || "Unnamed beneficiary"}</strong>
-            <div className="meta">
-              {b.relationship}
-              {b.allocation ? ` · ${b.allocation}%` : ""}
+        {sorted.map((b, i) => {
+          const itemId = items.find((it) => it.value === b)?.id ?? "";
+          return (
+            <div className="item" key={itemId || i}>
+              <strong>{b.fullName || "Unnamed beneficiary"}</strong>
+              <div className="meta">
+                {b.relationship}
+                {b.allocation ? ` · ${b.allocation}%` : ""}
+              </div>
+              {b.email && <div className="meta">{maskContact(b.email)}</div>}
+              {b.phone && <div className="meta">{maskContact(b.phone)}</div>}
+              {b.mailingAddress && <div className="meta">{b.mailingAddress}</div>}
+              {b.notes && <div className="notes">{b.notes}</div>}
+              <RecordActions resource="beneficiaries" id={itemId} onDelete={() => remove(itemId)} />
             </div>
-            {b.email && <div className="meta">{maskContact(b.email)}</div>}
-            {b.phone && <div className="meta">{maskContact(b.phone)}</div>}
-            {b.mailingAddress && <div className="meta">{b.mailingAddress}</div>}
-            {b.notes && <div className="notes">{b.notes}</div>}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );
