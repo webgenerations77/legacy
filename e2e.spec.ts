@@ -609,18 +609,13 @@ describe("walking skeleton (live)", () => {
     const saltRes = await fetch(`${BASE}/api/survivor/salt`, {
       method: "POST", headers: json, body: JSON.stringify({ email: sEmail }),
     });
+    expect(saltRes.status).toBe(200);
     const { salt: survivorSalt } = await saltRes.json();
     expect(survivorSalt).toBe(arm.survivorSalt);
 
     const verifier = await deriveSurvivorAuthVerifier(arm.recoveryCode, survivorSalt);
-    const claimRes = await fetch(`${BASE}/api/survivor/claim`, {
-      method: "POST", headers: json,
-      body: JSON.stringify({ email: sEmail, survivorAuthVerifier: verifier }),
-    });
-    expect(claimRes.status).toBe(200);
-    const claim = await claimRes.json();
 
-    // a wrong code is rejected with 401
+    // a wrong code is rejected with 401 — proved against a live, unconsumed escrow
     const badVerifier = await deriveSurvivorAuthVerifier("00000-00000-00000-00000", survivorSalt);
     const badClaim = await fetch(`${BASE}/api/survivor/claim`, {
       method: "POST", headers: json,
@@ -628,10 +623,18 @@ describe("walking skeleton (live)", () => {
     });
     expect(badClaim.status).toBe(401);
 
+    const claimRes = await fetch(`${BASE}/api/survivor/claim`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: sEmail, survivorAuthVerifier: verifier }),
+    });
+    expect(claimRes.status).toBe(200);
+    const claim = await claimRes.json();
+
     // --- RECOVER the master key and decrypt the beneficiary ---
     const recovered = await recoverMasterKey(
       arm.recoveryCode, survivorSalt, claim.escrow.ciphertext, claim.escrow.iv,
     );
+    expect(claim.records.beneficiaries).toHaveLength(1);
     const back = parseBeneficiary(
       await decryptItem(recovered, claim.records.beneficiaries[0].ciphertext,
         claim.records.beneficiaries[0].iv),
@@ -646,8 +649,11 @@ describe("walking skeleton (live)", () => {
     const sa = user!.survivorAccess!;
     expect(sa.survivorAuthVerifierHash.startsWith("$2")).toBe(true);
     expect(sa.survivorAuthVerifierHash).not.toBe(arm.survivorAuthVerifier);
-    expect(sa.escrowCiphertext).not.toContain("Survivor Heir");
     expect(sa.escrowCiphertext).not.toContain(arm.recoveryCode);
+    // the beneficiary row itself must hold only ciphertext (not the plaintext name)
+    const benRow = await db.beneficiary.findFirst({ where: { user: { email: sEmail } } });
+    expect(benRow).toBeTruthy();
+    expect(benRow!.ciphertext).not.toContain("Survivor Heir");
 
     // cleanup
     await db.user.delete({ where: { email: sEmail } });
