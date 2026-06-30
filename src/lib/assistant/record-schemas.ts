@@ -113,6 +113,10 @@ export const RECORD_SCHEMA_BY_KEY: Record<RecordTypeKey, RecordTypeSchema> = Obj
   RECORD_SCHEMAS.map((s) => [s.key, s]),
 ) as Record<RecordTypeKey, RecordTypeSchema>;
 
+export const RECORD_SCHEMA_BY_RESOURCE: Record<string, RecordTypeSchema> = Object.fromEntries(
+  RECORD_SCHEMAS.map((s) => [s.resource, s]),
+);
+
 export class MissingRequiredFieldError extends Error {
   constructor(public readonly field: string) {
     super(`Missing required field: ${field}`);

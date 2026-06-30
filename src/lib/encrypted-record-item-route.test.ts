@@ -74,6 +74,7 @@ describe("createEncryptedRecordItemRoute", () => {
   it("DELETE 401 unauth; 404 on no match; 200 on success", async () => {
     getSessionUserId.mockResolvedValue(null);
     expect((await DELETE(delReq(), ctx("abc"))).status).toBe(401);
+    expect(deleteMany).not.toHaveBeenCalled();
 
     getSessionUserId.mockResolvedValue("user-1");
     deleteMany.mockResolvedValue({ count: 0 });

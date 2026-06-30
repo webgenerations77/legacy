@@ -20,7 +20,7 @@ export function RecordActions({
       </Link>
       {confirming ? (
         <>
-          <button type="button" onClick={onDelete}>
+          <button type="button" onClick={() => { setConfirming(false); onDelete(); }}>
             Confirm delete
           </button>
           <button type="button" className="linkbtn" onClick={() => setConfirming(false)}>

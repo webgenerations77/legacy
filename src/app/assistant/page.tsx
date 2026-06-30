@@ -58,9 +58,8 @@ function AssistantInner() {
 
   async function onDeletePinned() {
     if (!editTarget) return;
-    if (await deletePinned()) {
-      router.push(`/${RECORD_SCHEMA_BY_KEY[editTarget.type].resource}`);
-    }
+    setConfirmingDelete(false);
+    if (await deletePinned()) router.push(`/${RECORD_SCHEMA_BY_KEY[editTarget.type].resource}`);
   }
 
   return (

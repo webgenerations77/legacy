@@ -6,7 +6,7 @@ import { api } from "@/lib/api-client";
 import { decryptItem } from "@/lib/crypto";
 import {
   parseToFields,
-  RECORD_SCHEMA_BY_KEY,
+  RECORD_SCHEMA_BY_RESOURCE,
   type RecordTypeKey,
   type ProposedFields,
 } from "@/lib/assistant/record-schemas";
@@ -24,10 +24,6 @@ interface EncryptedRow {
   iv: string;
 }
 
-function isRecordType(t: string): t is RecordTypeKey {
-  return t in RECORD_SCHEMA_BY_KEY;
-}
-
 export function useEditTarget(params: { type: string; id: string } | null): {
   editTarget: EditTarget | null;
   loadError: string | null;
@@ -36,16 +32,17 @@ export function useEditTarget(params: { type: string; id: string } | null): {
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // params.type is a resource name (e.g. "accounts"), resolved to a schema and its singular key.
   const type = params?.type ?? null;
   const id = params?.id ?? null;
 
   useEffect(() => {
-    if (!type || !id || !masterKey || !isRecordType(type)) {
+    const schema = type ? RECORD_SCHEMA_BY_RESOURCE[type] : undefined;
+    if (!type || !id || !masterKey || !schema) {
       setEditTarget(null);
       setLoadError(null);
       return;
     }
-    const schema = RECORD_SCHEMA_BY_KEY[type];
     let active = true;
     (async () => {
       setLoadError(null);
@@ -59,8 +56,8 @@ export function useEditTarget(params: { type: string; id: string } | null): {
           return;
         }
         const plaintext = await decryptItem(masterKey, row.ciphertext, row.iv);
-        const currentFields = parseToFields(type, plaintext);
-        if (active) setEditTarget({ type, id, label: schema.label, currentFields });
+        const currentFields = parseToFields(schema.key, plaintext);
+        if (active) setEditTarget({ type: schema.key, id, label: schema.label, currentFields });
       } catch {
         if (active) setLoadError("We couldn't load that record to edit.");
       }

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   RECORD_SCHEMAS,
   RECORD_SCHEMA_BY_KEY,
+  RECORD_SCHEMA_BY_RESOURCE,
   toPlaintext,
   buildProposeRecordJsonSchema,
   MissingRequiredFieldError,
@@ -92,6 +93,16 @@ describe("record-schemas", () => {
     const input = { type: "account", accountType: "Savings", institution: "Chase" };
     const { type, ...fields } = input;
     expect(parseAccount(toPlaintext(type as RecordTypeKey, fields)).type).toBe("Savings");
+  });
+});
+
+describe("RECORD_SCHEMA_BY_RESOURCE", () => {
+  it("maps each plural resource to the correct singular type key", () => {
+    expect(RECORD_SCHEMA_BY_RESOURCE.accounts.key).toBe("account");
+    expect(RECORD_SCHEMA_BY_RESOURCE.bills.key).toBe("bill");
+    expect(RECORD_SCHEMA_BY_RESOURCE.loans.key).toBe("loan");
+    expect(RECORD_SCHEMA_BY_RESOURCE.beneficiaries.key).toBe("beneficiary");
+    expect(RECORD_SCHEMA_BY_RESOURCE.vault.key).toBe("vault");
   });
 });
 
