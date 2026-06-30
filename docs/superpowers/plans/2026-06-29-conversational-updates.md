@@ -86,7 +86,7 @@ describe("record-schemas", () => {
   });
 
   it("toPlaintext('account') round-trips through serializeAccount with defaults", () => {
-    const json = toPlaintext("account", { institution: "Chase", type: "Checking", balance: "100" });
+    const json = toPlaintext("account", { institution: "Chase", accountType: "Checking", balance: "100" });
     expect(parseAccount(json)).toEqual({
       type: "Checking",
       institution: "Chase",
@@ -98,7 +98,7 @@ describe("record-schemas", () => {
   });
 
   it("toPlaintext('account') falls back to 'Other' for an unknown type value", () => {
-    const json = toPlaintext("account", { institution: "Chase", type: "Nonsense" });
+    const json = toPlaintext("account", { institution: "Chase", accountType: "Nonsense" });
     expect(parseAccount(json).type).toBe("Other");
   });
 
@@ -200,7 +200,10 @@ export const RECORD_SCHEMAS: readonly RecordTypeSchema[] = [
     resource: "accounts",
     fields: [
       { key: "institution", label: "Institution", required: true, kind: "text" },
-      { key: "type", label: "Account type", required: false, kind: "text", options: ACCOUNT_TYPES },
+      // NB: key is "accountType", NOT "type" — the proposal's discriminant key is
+      // "type", and a field also named "type" would collide (stripped by the
+      // downstream `const { type, ...fields } = input`), silently losing the value.
+      { key: "accountType", label: "Account type", required: false, kind: "text", options: ACCOUNT_TYPES },
       { key: "nickname", label: "Nickname", required: false, kind: "text" },
       { key: "accountNumber", label: "Account number", required: false, kind: "text" },
       { key: "balance", label: "Balance", required: false, kind: "number" },
@@ -305,7 +308,7 @@ export function toPlaintext(type: RecordTypeKey, fields: ProposedFields): string
       return str(fields, "note");
     case "account": {
       const a: Account = {
-        type: pick(fields, "type", ACCOUNT_TYPES, "Other"),
+        type: pick(fields, "accountType", ACCOUNT_TYPES, "Other"),
         institution: str(fields, "institution"),
         nickname: str(fields, "nickname"),
         accountNumber: str(fields, "accountNumber"),
