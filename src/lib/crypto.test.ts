@@ -65,3 +65,31 @@ describe("base64 helpers", () => {
     expect(out.buffer).toBeInstanceOf(ArrayBuffer);
   });
 });
+
+import { encryptBytes, decryptBytes } from "./crypto";
+
+describe("binary encrypt/decrypt", () => {
+  it("round-trips arbitrary binary bytes", async () => {
+    const key = await deriveMasterKey("file-pass", generateSalt());
+    const bytes = new Uint8Array([0, 1, 2, 250, 255, 128, 7, 13, 0, 99]);
+    const { ciphertext, iv } = await encryptBytes(key, bytes);
+    const out = await decryptBytes(key, ciphertext, iv);
+    expect(Array.from(out)).toEqual(Array.from(bytes));
+  });
+
+  it("uses a random IV (different ciphertext each time)", async () => {
+    const key = await deriveMasterKey("pw", generateSalt());
+    const bytes = new Uint8Array([1, 2, 3]);
+    const a = await encryptBytes(key, bytes);
+    const b = await encryptBytes(key, bytes);
+    expect(a.ciphertext).not.toBe(b.ciphertext);
+  });
+
+  it("fails to decrypt with the wrong key", async () => {
+    const salt = generateSalt();
+    const good = await deriveMasterKey("right", salt);
+    const bad = await deriveMasterKey("wrong", salt);
+    const { ciphertext, iv } = await encryptBytes(good, new Uint8Array([5, 6, 7]));
+    await expect(decryptBytes(bad, ciphertext, iv)).rejects.toBeDefined();
+  });
+});

@@ -122,3 +122,27 @@ export async function decryptItem(
   );
   return dec.decode(pt);
 }
+
+export async function encryptBytes(
+  masterKey: CryptoBytes,
+  bytes: CryptoBytes,
+): Promise<{ ciphertext: string; iv: string }> {
+  const key = await importAesKey(masterKey);
+  const iv = randomBytes(IV_BYTES);
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, bytes);
+  return { ciphertext: bytesToB64(new Uint8Array(ct)), iv: bytesToB64(iv) };
+}
+
+export async function decryptBytes(
+  masterKey: CryptoBytes,
+  ciphertext: string,
+  iv: string,
+): Promise<CryptoBytes> {
+  const key = await importAesKey(masterKey);
+  const pt = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: b64ToBytes(iv) },
+    key,
+    b64ToBytes(ciphertext),
+  );
+  return new Uint8Array(pt);
+}
