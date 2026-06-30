@@ -1,5 +1,19 @@
 import { type ObituaryIntake } from "@/lib/obituary";
 
+export type SurvivorBlob = { id: string; ciphertext: string; iv: string };
+export type SurvivorRecords = {
+  items: SurvivorBlob[];
+  accounts: SurvivorBlob[];
+  bills: SurvivorBlob[];
+  loans: SurvivorBlob[];
+  beneficiaries: SurvivorBlob[];
+  obituary: { intake: ObituaryIntake; draft: string } | null;
+};
+export type SurvivorClaim = {
+  escrow: { ciphertext: string; iv: string };
+  records: SurvivorRecords;
+};
+
 async function post<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
@@ -98,4 +112,25 @@ export const api = {
     }
     return res.json() as Promise<{ ok: true }>;
   },
+  survivorStatus: async () => {
+    const res = await fetch("/api/survivor");
+    if (res.status === 401) return { armed: false, updatedAt: null };
+    if (!res.ok) throw new Error("We couldn't check survivor access.");
+    return res.json() as Promise<{ armed: boolean; updatedAt: string | null }>;
+  },
+  armSurvivor: (payload: {
+    survivorSalt: string;
+    survivorAuthVerifier: string;
+    escrowCiphertext: string;
+    escrowIv: string;
+  }) => post<{ ok: true }>("/api/survivor", payload),
+  revokeSurvivor: async () => {
+    const res = await fetch("/api/survivor", { method: "DELETE" });
+    if (!res.ok) throw new Error("We couldn't remove survivor access.");
+    return res.json() as Promise<{ ok: true }>;
+  },
+  survivorSalt: (email: string) =>
+    post<{ salt: string }>("/api/survivor/salt", { email }),
+  survivorClaim: (email: string, survivorAuthVerifier: string) =>
+    post<SurvivorClaim>("/api/survivor/claim", { email, survivorAuthVerifier }),
 };
