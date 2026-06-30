@@ -1,12 +1,15 @@
 // src/app/assistant/page.tsx
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { type UIMessage } from "ai";
 import { AppNav } from "@/components/AppNav";
 import { LegacyMark } from "@/components/Logo";
 import { useAssistant } from "@/app/providers/useAssistant";
+import { useEditTarget } from "@/app/providers/useEditTarget";
 import { ProposalCard } from "@/components/assistant/ProposalCard";
+import { RECORD_SCHEMA_BY_KEY } from "@/lib/assistant/record-schemas";
 
 function MessageText({ message }: { message: UIMessage }) {
   const text = message.parts
@@ -22,7 +25,14 @@ function MessageText({ message }: { message: UIMessage }) {
   );
 }
 
-export default function AssistantPage() {
+function AssistantInner() {
+  const router = useRouter();
+  const sp = useSearchParams();
+  const type = sp.get("type");
+  const id = sp.get("id");
+  const params = type && id ? { type, id } : null;
+
+  const { editTarget, loadError } = useEditTarget(params);
   const {
     messages,
     status,
@@ -30,11 +40,13 @@ export default function AssistantPage() {
     pendingProposal,
     confirmProposal,
     discardProposal,
+    deletePinned,
     savedNotice,
     error,
     masterKey,
-  } = useAssistant();
+  } = useAssistant(editTarget);
   const [input, setInput] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   if (!masterKey) return null;
 
@@ -42,6 +54,12 @@ export default function AssistantPage() {
     e.preventDefault();
     send(input);
     setInput("");
+  }
+
+  async function onDeletePinned() {
+    if (!editTarget) return;
+    setConfirmingDelete(false);
+    if (await deletePinned()) router.push(`/${RECORD_SCHEMA_BY_KEY[editTarget.type].resource}`);
   }
 
   return (
@@ -52,10 +70,36 @@ export default function AssistantPage() {
           <LegacyMark size={44} />
         </div>
         <h1>Assistant</h1>
-        <p className="subtle">
-          Describe a record in your own words and I&apos;ll help you save it. This chat isn&apos;t stored — only the
-          records you choose to save are kept, encrypted on your device.
-        </p>
+
+        {editTarget ? (
+          <>
+            <p className="subtle">
+              Editing your {editTarget.label.toLowerCase()}. Tell me what to change — I&apos;ll
+              update only this record. It stays encrypted on your device.
+            </p>
+            {confirmingDelete ? (
+              <div className="row">
+                <button type="button" onClick={onDeletePinned}>
+                  Confirm delete
+                </button>
+                <button type="button" className="linkbtn" onClick={() => setConfirmingDelete(false)}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="linkbtn" onClick={() => setConfirmingDelete(true)}>
+                Delete this record
+              </button>
+            )}
+          </>
+        ) : (
+          <p className="subtle">
+            Describe a record in your own words and I&apos;ll help you save it. This chat isn&apos;t
+            stored — only the records you choose to save are kept, encrypted on your device.
+          </p>
+        )}
+
+        {loadError && <p className="error">{loadError}</p>}
 
         {messages.map((m) => (
           <MessageText key={m.id} message={m} />
@@ -78,7 +122,9 @@ export default function AssistantPage() {
         <form className="row" onSubmit={onSubmit}>
           <input
             value={input}
-            placeholder="e.g. Add my Wells Fargo mortgage, about 280k left at 6.1%"
+            placeholder={
+              editTarget ? "e.g. change the rate to 6%" : "e.g. Add my Wells Fargo mortgage, about 280k left at 6.1%"
+            }
             onChange={(e) => setInput(e.target.value)}
             disabled={status === "streaming" || status === "submitted"}
           />
@@ -88,5 +134,13 @@ export default function AssistantPage() {
         </form>
       </div>
     </main>
+  );
+}
+
+export default function AssistantPage() {
+  return (
+    <Suspense fallback={null}>
+      <AssistantInner />
+    </Suspense>
   );
 }

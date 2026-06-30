@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppNav } from "@/components/AppNav";
 import { LegacyMark } from "@/components/Logo";
 import { useEncryptedRecords } from "@/app/providers/useEncryptedRecords";
+import { RecordActions } from "@/components/RecordActions";
 import {
   type Loan,
   type LoanKind,
@@ -33,7 +34,7 @@ const EMPTY: Loan = {
 };
 
 export default function LoansPage() {
-  const { items, error, loaded, add, masterKey } = useEncryptedRecords<Loan>({
+  const { items, error, loaded, add, remove, masterKey } = useEncryptedRecords<Loan>({
     resource: "loans",
     listKey: "loans",
     serialize: serializeLoan,
@@ -176,24 +177,28 @@ export default function LoansPage() {
           <p className="subtle">We couldn&apos;t unlock some loans.</p>
         )}
 
-        {sorted.map((l, i) => (
-          <div className="item" key={i}>
-            <strong>{l.nickname || l.lender || "Untitled loan"}</strong>
-            <div className="meta">
-              {l.kind}
-              {l.lender ? ` · ${l.lender}` : ""}
+        {sorted.map((l, i) => {
+          const itemId = items.find((it) => it.value === l)?.id ?? "";
+          return (
+            <div className="item" key={itemId || i}>
+              <strong>{l.nickname || l.lender || "Untitled loan"}</strong>
+              <div className="meta">
+                {l.kind}
+                {l.lender ? ` · ${l.lender}` : ""}
+              </div>
+              {l.accountNumber && (
+                <div className="meta">{maskAccountNumber(l.accountNumber)}</div>
+              )}
+              {l.currentBalance && <div className="meta">Balance: {l.currentBalance}</div>}
+              {l.interestRate && <div className="meta">Rate: {l.interestRate}</div>}
+              {l.monthlyPayment && <div className="meta">Payment: {l.monthlyPayment}/mo</div>}
+              {l.nextPaymentDate && <div className="meta">Next: {l.nextPaymentDate}</div>}
+              {l.payoffDate && <div className="meta">Payoff: {l.payoffDate}</div>}
+              {l.notes && <div className="notes">{l.notes}</div>}
+              <RecordActions resource="loans" id={itemId} onDelete={() => remove(itemId)} />
             </div>
-            {l.accountNumber && (
-              <div className="meta">{maskAccountNumber(l.accountNumber)}</div>
-            )}
-            {l.currentBalance && <div className="meta">Balance: {l.currentBalance}</div>}
-            {l.interestRate && <div className="meta">Rate: {l.interestRate}</div>}
-            {l.monthlyPayment && <div className="meta">Payment: {l.monthlyPayment}/mo</div>}
-            {l.nextPaymentDate && <div className="meta">Next: {l.nextPaymentDate}</div>}
-            {l.payoffDate && <div className="meta">Payoff: {l.payoffDate}</div>}
-            {l.notes && <div className="notes">{l.notes}</div>}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );

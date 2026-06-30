@@ -38,6 +38,26 @@ export const api = {
   },
   addRecord: (resource: string, ciphertext: string, iv: string) =>
     post<{ id: string }>(`/api/${resource}`, { ciphertext, iv }),
+  updateRecord: async (resource: string, id: string, ciphertext: string, iv: string) => {
+    const res = await fetch(`/api/${resource}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ciphertext, iv }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? `Request failed (${res.status})`);
+    }
+    return res.json() as Promise<{ ok: true }>;
+  },
+  deleteRecord: async (resource: string, id: string) => {
+    const res = await fetch(`/api/${resource}/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? `Request failed (${res.status})`);
+    }
+    return res.json() as Promise<{ ok: true }>;
+  },
   getObituary: async () => {
     const res = await fetch("/api/obituary");
     if (res.status === 401) return null;

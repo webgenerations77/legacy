@@ -113,6 +113,10 @@ export const RECORD_SCHEMA_BY_KEY: Record<RecordTypeKey, RecordTypeSchema> = Obj
   RECORD_SCHEMAS.map((s) => [s.key, s]),
 ) as Record<RecordTypeKey, RecordTypeSchema>;
 
+export const RECORD_SCHEMA_BY_RESOURCE: Record<string, RecordTypeSchema> = Object.fromEntries(
+  RECORD_SCHEMAS.map((s) => [s.resource, s]),
+);
+
 export class MissingRequiredFieldError extends Error {
   constructor(public readonly field: string) {
     super(`Missing required field: ${field}`);
@@ -221,6 +225,28 @@ function branch(schema: RecordTypeSchema): JSONSchema7 {
     if (f.required) required.push(f.key);
   }
   return { type: "object", additionalProperties: false, properties, required };
+}
+
+// Inverse of toPlaintext: stored plaintext → editable ProposedFields (field keys).
+// The account domain object's `.type` maps back to the `accountType` field key
+// (the discriminant-collision fix from Slice A, in reverse). Vault is a raw string.
+export function parseToFields(type: RecordTypeKey, plaintext: string): ProposedFields {
+  if (type === "vault") return { note: plaintext };
+  let obj: Record<string, unknown>;
+  try {
+    obj = JSON.parse(plaintext) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+  if (typeof obj !== "object" || obj === null) return {};
+  const fields: ProposedFields = {};
+  for (const f of RECORD_SCHEMA_BY_KEY[type].fields) {
+    // account's "accountType" field reads from the domain object's "type" key.
+    const sourceKey = type === "account" && f.key === "accountType" ? "type" : f.key;
+    const v = obj[sourceKey];
+    if (typeof v === "string" || typeof v === "boolean") fields[f.key] = v;
+  }
+  return fields;
 }
 
 export function buildProposeRecordJsonSchema(): JSONSchema7 {
