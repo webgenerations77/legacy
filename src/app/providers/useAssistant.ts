@@ -79,7 +79,7 @@ export function useAssistant(editTarget: EditTarget | null = null) {
         const plaintext = toPlaintext(type, fields);
         const { ciphertext, iv } = await encryptItem(masterKey, plaintext);
         if (editTarget) {
-          await api.updateRecord(RECORD_SCHEMA_BY_KEY[type].resource, editTarget.id, ciphertext, iv);
+          await api.updateRecord(RECORD_SCHEMA_BY_KEY[editTarget.type].resource, editTarget.id, ciphertext, iv);
         } else {
           await api.addRecord(RECORD_SCHEMA_BY_KEY[type].resource, ciphertext, iv);
         }

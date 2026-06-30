@@ -49,6 +49,7 @@ export function useEditTarget(params: { type: string; id: string } | null): {
     let active = true;
     (async () => {
       setLoadError(null);
+      setEditTarget(null);
       try {
         const data = await api.listRecords(schema.resource);
         const rows = (data[schema.resource] ?? data.items ?? []) as EncryptedRow[];
