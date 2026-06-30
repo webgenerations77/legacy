@@ -28,6 +28,7 @@ export function AppNav() {
         <Link href="/bills">Bills</Link>
         <Link href="/loans">Loans</Link>
         <Link href="/beneficiaries">Beneficiaries</Link>
+        <Link href="/documents">Documents</Link>
         <Link href="/survivor">Survivor access</Link>
         <Link href="/obituary">Obituary</Link>
         <Link href="/assistant">Assistant</Link>
