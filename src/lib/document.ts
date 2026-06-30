@@ -10,6 +10,9 @@ export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 /** Server-side guard on stored ciphertext length (base64 of ~5 MB + AES overhead, with margin). */
 export const MAX_CONTENT_CIPHERTEXT_CHARS = 8 * 1024 * 1024;
 
+/** Server-side guard on stored metadata ciphertext length (encrypts a tiny {filename, contentType, size} JSON; 64 KB is generous). */
+export const MAX_META_CIPHERTEXT_CHARS = 64 * 1024;
+
 const ALLOWED_CONTENT_TYPES = new Set([
   "application/pdf",
   "image/png",

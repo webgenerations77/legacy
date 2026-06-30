@@ -73,6 +73,13 @@ describe("/api/documents", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  it("POST 400 when meta ciphertext is too large", async () => {
+    requireUserId.mockResolvedValue("u1");
+    const huge = "a".repeat(64 * 1024 + 1);
+    expect((await POST(postReq({ ...goodBody, metaCiphertext: huge }))).status).toBe(400);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it("POST creates and returns the id", async () => {
     requireUserId.mockResolvedValue("u1");
     create.mockResolvedValue({ id: "d9" });

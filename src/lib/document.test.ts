@@ -5,6 +5,7 @@ import {
   formatFileSize,
   isAllowedType,
   MAX_FILE_BYTES,
+  MAX_META_CIPHERTEXT_CHARS,
   type DocumentMeta,
 } from "./document";
 
@@ -35,5 +36,9 @@ describe("document meta", () => {
 
   it("exposes a 5 MB cap", () => {
     expect(MAX_FILE_BYTES).toBe(5 * 1024 * 1024);
+  });
+
+  it("exposes a 64 KB metadata ciphertext cap", () => {
+    expect(MAX_META_CIPHERTEXT_CHARS).toBe(64 * 1024);
   });
 });

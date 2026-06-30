@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUserId } from "@/lib/route-auth";
 import { readJsonBody } from "@/lib/http";
-import { MAX_CONTENT_CIPHERTEXT_CHARS } from "@/lib/document";
+import { MAX_CONTENT_CIPHERTEXT_CHARS, MAX_META_CIPHERTEXT_CHARS } from "@/lib/document";
 
 export async function GET() {
   const userId = await requireUserId();
@@ -27,6 +27,9 @@ export async function POST(req: Request) {
   const contentIv = typeof body.contentIv === "string" ? body.contentIv : "";
   if (!metaCiphertext || !metaIv || !contentCiphertext || !contentIv) {
     return NextResponse.json({ error: "Missing fields." }, { status: 400 });
+  }
+  if (metaCiphertext.length > MAX_META_CIPHERTEXT_CHARS) {
+    return NextResponse.json({ error: "File is too large." }, { status: 400 });
   }
   if (contentCiphertext.length > MAX_CONTENT_CIPHERTEXT_CHARS) {
     return NextResponse.json({ error: "File is too large." }, { status: 400 });
