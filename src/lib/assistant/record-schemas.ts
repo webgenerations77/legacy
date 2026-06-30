@@ -234,6 +234,7 @@ export function parseToFields(type: RecordTypeKey, plaintext: string): ProposedF
   } catch {
     return {};
   }
+  if (typeof obj !== "object" || obj === null) return {};
   const fields: ProposedFields = {};
   for (const f of RECORD_SCHEMA_BY_KEY[type].fields) {
     // account's "accountType" field reads from the domain object's "type" key.

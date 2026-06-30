@@ -124,4 +124,10 @@ describe("parseToFields", () => {
   it("degrades to {} on malformed non-vault plaintext rather than throwing", () => {
     expect(parseToFields("account", "not json{")).toEqual({});
   });
+
+  it("returns {} for JSON that parses to null or a primitive (never throws)", () => {
+    expect(parseToFields("account", "null")).toEqual({});
+    expect(parseToFields("bill", "42")).toEqual({});
+    expect(parseToFields("loan", "true")).toEqual({});
+  });
 });
