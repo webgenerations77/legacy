@@ -21,6 +21,17 @@ function req(body: unknown) {
 beforeEach(() => findUnique.mockReset());
 
 describe("/api/survivor/salt", () => {
+  it("returns 500 (fail closed) when SURVIVOR_SALT_SECRET is unset", async () => {
+    const saved = process.env.SURVIVOR_SALT_SECRET;
+    delete process.env.SURVIVOR_SALT_SECRET;
+    try {
+      const res = await POST(req({ email: "a@example.com" }));
+      expect(res.status).toBe(500);
+    } finally {
+      process.env.SURVIVOR_SALT_SECRET = saved;
+    }
+  });
+
   it("returns the real salt when armed", async () => {
     findUnique.mockResolvedValue({ survivorAccess: { survivorSalt: "REAL_SALT" } });
     const res = await POST(req({ email: "a@example.com" }));

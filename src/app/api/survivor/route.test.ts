@@ -48,6 +48,18 @@ describe("/api/survivor", () => {
     expect(upsert).not.toHaveBeenCalled();
   });
 
+  it("GET 401 when unauthenticated", async () => {
+    requireUserId.mockResolvedValue(null);
+    expect((await GET()).status).toBe(401);
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+
+  it("DELETE 401 when unauthenticated", async () => {
+    requireUserId.mockResolvedValue(null);
+    expect((await DELETE()).status).toBe(401);
+    expect(deleteMany).not.toHaveBeenCalled();
+  });
+
   it("POST 400 when a field is missing", async () => {
     requireUserId.mockResolvedValue("u1");
     expect((await POST(postReq({ survivorSalt: "s" }))).status).toBe(400);

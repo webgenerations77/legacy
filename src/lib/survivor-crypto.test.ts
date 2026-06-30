@@ -27,7 +27,11 @@ describe("survivor crypto round-trip", () => {
   it("claim verifier matches the armed verifier (and is tolerant of formatting)", async () => {
     const masterKey = await deriveMasterKey("p", generateSalt());
     const arm = await buildSurvivorEscrow(masterKey);
-    const v = await deriveSurvivorAuthVerifier(arm.recoveryCode, arm.survivorSalt);
+    // Derive from a reformatted variant (lowercase + dashes stripped) to prove
+    // normalization tolerance — a survivor typing with different case/spacing
+    // should recover the same verifier.
+    const reformatted = arm.recoveryCode.toLowerCase().replace(/-/g, "");
+    const v = await deriveSurvivorAuthVerifier(reformatted, arm.survivorSalt);
     expect(v).toBe(arm.survivorAuthVerifier);
   }, 30_000);
 

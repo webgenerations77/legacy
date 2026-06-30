@@ -9,6 +9,9 @@ export async function POST(req: Request) {
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const secret = process.env.SURVIVOR_SALT_SECRET ?? "";
+  if (!secret) {
+    return NextResponse.json({ error: "Server misconfiguration." }, { status: 500 });
+  }
 
   const user = email
     ? await prisma.user.findUnique({
