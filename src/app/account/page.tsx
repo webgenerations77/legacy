@@ -29,21 +29,22 @@ export default function AccountPage() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function refresh() {
+  async function refresh(): Promise<boolean> {
     const s = await api.accountStatus();
     if (s === null) {
       router.push("/unlock");
-      return;
+      return false;
     }
     setStatus(s);
     setLoading(false);
+    return true;
   }
 
   useEffect(() => {
     const confirming = new URLSearchParams(window.location.search).get("link") === "confirm";
     (async () => {
-      await refresh();
-      if (confirming) {
+      const ok = await refresh();
+      if (ok && confirming) {
         const { email } = await api.pendingLink();
         if (email) {
           setConfirmEmail(email);
