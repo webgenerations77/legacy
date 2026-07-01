@@ -32,6 +32,7 @@ export function AppNav() {
         <Link href="/survivor">Survivor access</Link>
         <Link href="/obituary">Obituary</Link>
         <Link href="/assistant">Assistant</Link>
+        <Link href="/account">Account</Link>
       </div>
       <button type="button" className="linkbtn" onClick={onLogout}>
         Lock &amp; sign out
