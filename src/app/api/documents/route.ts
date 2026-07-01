@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUserId } from "@/lib/route-auth";
-import { readJsonBody } from "@/lib/http";
+import { readJsonBody, noStore } from "@/lib/http";
 import { MAX_CONTENT_CIPHERTEXT_CHARS, MAX_META_CIPHERTEXT_CHARS } from "@/lib/document";
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     select: { id: true, metaCiphertext: true, metaIv: true, createdAt: true },
   });
-  return NextResponse.json({ documents });
+  return noStore(NextResponse.json({ documents }));
 }
 
 export async function POST(req: Request) {

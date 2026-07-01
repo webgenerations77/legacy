@@ -44,6 +44,7 @@ describe("/api/documents", () => {
     findMany.mockResolvedValue([{ id: "d1", metaCiphertext: "mc", metaIv: "mi", createdAt: new Date(0) }]);
     const res = await GET();
     expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
     const data = await res.json();
     expect(data.documents[0]).toMatchObject({ id: "d1", metaCiphertext: "mc", metaIv: "mi" });
     expect(JSON.stringify(data)).not.toContain("contentCiphertext");

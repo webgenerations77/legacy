@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUserId } from "@/lib/route-auth";
+import { noStore } from "@/lib/http";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
@@ -11,7 +12,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     select: { contentCiphertext: true, contentIv: true },
   });
   if (!doc) return NextResponse.json({ error: "Not found." }, { status: 404 });
-  return NextResponse.json(doc);
+  return noStore(NextResponse.json(doc));
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
