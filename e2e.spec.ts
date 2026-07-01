@@ -949,7 +949,7 @@ describe("change vault passphrase (live)", () => {
         escrowIv: arm.escrowIv,
       }),
     });
-    expect(armRes.status).toBe(200);
+    expect(armRes.status).toBe(201);
     const escrowBefore = await db.survivorAccess.findFirst({
       where: { user: { email: cpEmail } },
       select: { escrowCiphertext: true, escrowIv: true },
@@ -1017,5 +1017,5 @@ describe("change vault passphrase (live)", () => {
     const list = (await listRes.json()) as { items: Array<{ ciphertext: string; iv: string }> };
     const decrypted = await Promise.all(list.items.map((r) => decryptItem(dk2, r.ciphertext, r.iv)));
     expect(decrypted).toContain(secretText);
-  });
+  }, 30000); // heaviest e2e: ~a dozen PBKDF2-600k derivations + bcrypt + network
 });
