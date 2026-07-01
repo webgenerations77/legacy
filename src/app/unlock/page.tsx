@@ -7,6 +7,7 @@ import { api } from "@/lib/api-client";
 import { BrandHeader } from "@/components/Logo";
 import { useKey } from "@/app/providers/KeyProvider";
 import { generateSalt, deriveMasterKey, deriveAuthVerifier } from "@/lib/crypto";
+import { resolveDataKey } from "@/lib/data-key";
 
 type Mode = "loading" | "email" | "create" | "enter" | "link";
 
@@ -72,7 +73,7 @@ export default function UnlockPage() {
       const masterKey = await deriveMasterKey(passphrase, s);
       const authVerifier = await deriveAuthVerifier(masterKey, passphrase);
       await api.login(email, authVerifier);
-      setMasterKey(masterKey);
+      setMasterKey(await resolveDataKey(masterKey));
       router.push("/vault");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -90,7 +91,7 @@ export default function UnlockPage() {
       const masterKey = await deriveMasterKey(passphrase, s);
       const authVerifier = await deriveAuthVerifier(masterKey, passphrase);
       await api.vaultInit(s, authVerifier);
-      setMasterKey(masterKey);
+      setMasterKey(await resolveDataKey(masterKey));
       router.push("/vault");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -109,7 +110,7 @@ export default function UnlockPage() {
       await api.vaultUnlock(authVerifier).catch(() => {
         throw new Error("That passphrase didn't match.");
       });
-      setMasterKey(masterKey);
+      setMasterKey(await resolveDataKey(masterKey));
       router.push("/vault");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -131,7 +132,7 @@ export default function UnlockPage() {
       await api.googleLink(authVerifier).catch(() => {
         throw new Error("That passphrase didn't match.");
       });
-      setMasterKey(masterKey);
+      setMasterKey(await resolveDataKey(masterKey));
       router.push("/vault");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");

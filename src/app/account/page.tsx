@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { BrandHeader } from "@/components/Logo";
-import { deriveMasterKey, deriveAuthVerifier } from "@/lib/crypto";
+import { generateSalt, deriveMasterKey, deriveAuthVerifier, wrapDataKey } from "@/lib/crypto";
+import { useKey } from "@/app/providers/KeyProvider";
 
 type Status = { email: string; googleLinked: boolean; hasPassword: boolean };
 
@@ -20,6 +21,7 @@ async function deriveVerifier(passphrase: string): Promise<string> {
 
 export default function AccountPage() {
   const router = useRouter();
+  const { masterKey } = useKey();
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
@@ -28,6 +30,9 @@ export default function AccountPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [currentPass, setCurrentPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
 
   async function refresh(): Promise<boolean> {
     const s = await api.accountStatus();
@@ -92,6 +97,52 @@ export default function AccountPage() {
     }
   }
 
+  async function onChangePassphrase(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setNotice("");
+    setBusy(true);
+    try {
+      if (!masterKey) throw new Error("Unlock your vault first.");
+      if (newPass.length < 8) throw new Error("Your new passphrase must be at least 8 characters.");
+      if (newPass !== confirmPass) throw new Error("Your new passphrases don't match.");
+
+      // Re-auth with the current passphrase (needs the current KEK salt).
+      const st = await api.vaultStatus();
+      const currentSalt = st?.salt;
+      if (!currentSalt) throw new Error("We couldn't verify your current passphrase.");
+      const currentKek = await deriveMasterKey(currentPass, currentSalt);
+      const currentAuthVerifier = await deriveAuthVerifier(currentKek, currentPass);
+
+      // Re-wrap the (unchanged) data key under a fresh KEK.
+      const newSalt = generateSalt();
+      const newKek = await deriveMasterKey(newPass, newSalt);
+      const { ciphertext, iv } = await wrapDataKey(newKek, masterKey);
+      const newAuthVerifier = await deriveAuthVerifier(newKek, newPass);
+
+      await api
+        .changePassphrase({
+          currentAuthVerifier,
+          kdfSalt: newSalt,
+          wrappedKeyCiphertext: ciphertext,
+          wrappedKeyIv: iv,
+          authVerifier: newAuthVerifier,
+        })
+        .catch(() => {
+          throw new Error("That passphrase didn't match.");
+        });
+
+      setNotice("Your vault passphrase has been changed.");
+      setCurrentPass("");
+      setNewPass("");
+      setConfirmPass("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "We couldn't change your passphrase.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading || !status) {
     return (
       <main className="center">
@@ -148,6 +199,30 @@ export default function AccountPage() {
             )}
           </div>
         )}
+
+        <div style={{ marginTop: "1.5rem" }}>
+          <h2>Change vault passphrase</h2>
+          {!masterKey ? (
+            <p className="subtle">
+              <a className="linkbtn" href="/unlock">Unlock your vault</a> to change your passphrase.
+            </p>
+          ) : (
+            <form onSubmit={onChangePassphrase}>
+              <label htmlFor="cur">Current passphrase</label>
+              <input id="cur" type="password" value={currentPass}
+                onChange={(e) => setCurrentPass(e.target.value)} required />
+              <label htmlFor="new">New passphrase</label>
+              <input id="new" type="password" value={newPass}
+                onChange={(e) => setNewPass(e.target.value)} required minLength={8} />
+              <label htmlFor="cf">Confirm new passphrase</label>
+              <input id="cf" type="password" value={confirmPass}
+                onChange={(e) => setConfirmPass(e.target.value)} required minLength={8} />
+              <button type="submit" disabled={busy}>
+                {busy ? "Changing…" : "Change passphrase"}
+              </button>
+            </form>
+          )}
+        </div>
 
         {notice && <p className="subtle">{notice}</p>}
         {error && <p className="error">{error}</p>}

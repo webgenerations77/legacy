@@ -146,3 +146,23 @@ export async function decryptBytes(
   );
   return new Uint8Array(pt);
 }
+
+/**
+ * Wrap a permanent data key (DK) under a passphrase-derived key-encrypting key (KEK).
+ * Mirrors the survivor escrow: AES-GCM over the base64 of the raw key bytes.
+ */
+export async function wrapDataKey(
+  kek: CryptoBytes,
+  dataKey: CryptoBytes,
+): Promise<{ ciphertext: string; iv: string }> {
+  return encryptItem(kek, bytesToBase64(dataKey));
+}
+
+/** Unwrap a data key previously wrapped with wrapDataKey. Throws if the KEK is wrong. */
+export async function unwrapDataKey(
+  kek: CryptoBytes,
+  ciphertext: string,
+  iv: string,
+): Promise<CryptoBytes> {
+  return base64ToBytes(await decryptItem(kek, ciphertext, iv));
+}

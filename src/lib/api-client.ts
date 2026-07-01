@@ -47,6 +47,18 @@ export const api = {
     post<{ ok: true }>("/api/auth/vault/init", { salt, authVerifier }),
   vaultUnlock: (authVerifier: string) =>
     post<{ ok: true }>("/api/auth/vault/unlock", { authVerifier }),
+  wrappedKey: async () => {
+    const res = await fetch("/api/auth/vault/wrapped-key");
+    if (!res.ok) throw new Error("We couldn't load your vault key.");
+    return res.json() as Promise<{ wrappedKeyCiphertext: string | null; wrappedKeyIv?: string }>;
+  },
+  changePassphrase: (body: {
+    currentAuthVerifier: string;
+    kdfSalt: string;
+    wrappedKeyCiphertext: string;
+    wrappedKeyIv: string;
+    authVerifier: string;
+  }) => post<{ ok: true }>("/api/auth/vault/change-passphrase", body),
   accountStatus: async () => {
     const res = await fetch("/api/account/status");
     if (res.status === 401) return null;

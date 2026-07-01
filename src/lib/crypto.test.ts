@@ -5,6 +5,8 @@ import {
   deriveAuthVerifier,
   encryptItem,
   decryptItem,
+  wrapDataKey,
+  unwrapDataKey,
 } from "@/lib/crypto";
 
 describe("crypto core", () => {
@@ -91,5 +93,23 @@ describe("binary encrypt/decrypt", () => {
     const bad = await deriveMasterKey("wrong", salt);
     const { ciphertext, iv } = await encryptBytes(good, new Uint8Array([5, 6, 7]));
     await expect(decryptBytes(bad, ciphertext, iv)).rejects.toBeDefined();
+  });
+});
+
+describe("wrapDataKey / unwrapDataKey", () => {
+  it("round-trips a data key through a KEK", async () => {
+    const kek = await deriveMasterKey("kek-pass", generateSalt());
+    const dataKey = await deriveMasterKey("dk-material", generateSalt());
+    const { ciphertext, iv } = await wrapDataKey(kek, dataKey);
+    const back = await unwrapDataKey(kek, ciphertext, iv);
+    expect(Array.from(back)).toEqual(Array.from(dataKey));
+  });
+
+  it("rejects unwrapping with the wrong KEK", async () => {
+    const kek = await deriveMasterKey("kek-pass", generateSalt());
+    const wrong = await deriveMasterKey("other-pass", generateSalt());
+    const dataKey = await deriveMasterKey("dk-material", generateSalt());
+    const { ciphertext, iv } = await wrapDataKey(kek, dataKey);
+    await expect(unwrapDataKey(wrong, ciphertext, iv)).rejects.toThrow();
   });
 });
