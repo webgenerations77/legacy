@@ -104,8 +104,16 @@ describe("POST /api/auth/google/link", () => {
     cookieVal = validCookie();
     requireUserId.mockResolvedValue("u1");
     findUnique.mockResolvedValue({ id: "u1", email: "a@example.com", authVerifierHash: "hash:v", googleId: null });
-    update.mockRejectedValue(new Error("Unique constraint failed"));
+    update.mockRejectedValue({ code: "P2002", message: "Unique constraint failed" });
     expect((await POST(req({ authVerifier: "v" }))).status).toBe(409);
+  });
+
+  it("propagates a non-unique DB error instead of masking it as 409", async () => {
+    cookieVal = validCookie();
+    requireUserId.mockResolvedValue("u1");
+    findUnique.mockResolvedValue({ id: "u1", email: "a@example.com", authVerifierHash: "hash:v", googleId: null });
+    update.mockRejectedValue(new Error("connection reset"));
+    await expect(POST(req({ authVerifier: "v" }))).rejects.toThrow("connection reset");
   });
 
   it("500 when LINK_STATE_SECRET is unset", async () => {

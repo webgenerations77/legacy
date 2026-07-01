@@ -39,11 +39,15 @@ export async function POST(req: Request) {
 
   try {
     await prisma.user.update({ where: { id: user.id }, data: { googleId: pending.googleId } });
-  } catch {
-    return NextResponse.json(
-      { error: "That Google account is already linked to another account." },
-      { status: 409 },
-    );
+  } catch (e) {
+    const code = (e as { code?: string } | null)?.code;
+    if (code === "P2002") {
+      return NextResponse.json(
+        { error: "That Google account is already linked to another account." },
+        { status: 409 },
+      );
+    }
+    throw e;
   }
 
   const res = NextResponse.json({ ok: true });
