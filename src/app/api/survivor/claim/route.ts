@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyVerifier } from "@/lib/auth";
-import { readJsonBody } from "@/lib/http";
+import { verifyVerifier, DECOY_VERIFIER_HASH } from "@/lib/auth";
+import { readJsonBody, noStore } from "@/lib/http";
 
 const denied = () => NextResponse.json({ error: "Could not unlock." }, { status: 401 });
 const blobSelect = { select: { id: true, ciphertext: true, iv: true }, orderBy: { createdAt: "desc" } } as const;
@@ -14,13 +14,29 @@ export async function POST(req: Request) {
   const survivorAuthVerifier =
     typeof body.survivorAuthVerifier === "string" ? body.survivorAuthVerifier : "";
   if (!email || !survivorAuthVerifier) {
+    // Still pay one bcrypt comparison so a blank request costs the same.
+    await verifyVerifier(survivorAuthVerifier, DECOY_VERIFIER_HASH);
     return denied();
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: {
-      survivorAccess: true,
+  // Phase 1: fetch ONLY the survivor row — no vault load yet.
+  const access = await prisma.survivorAccess.findFirst({
+    where: { user: { email } },
+    select: { userId: true, escrowCiphertext: true, escrowIv: true, survivorAuthVerifierHash: true },
+  });
+
+  // Always run one comparison (real hash if armed, decoy otherwise) so armed and
+  // unarmed accounts are indistinguishable by timing.
+  const ok = await verifyVerifier(
+    survivorAuthVerifier,
+    access?.survivorAuthVerifierHash ?? DECOY_VERIFIER_HASH,
+  );
+  if (!access || !ok) return denied();
+
+  // Phase 2: only now load the full vault.
+  const records = await prisma.user.findUnique({
+    where: { id: access.userId },
+    select: {
       vaultItems: blobSelect,
       financialAccounts: blobSelect,
       bills: blobSelect,
@@ -33,24 +49,20 @@ export async function POST(req: Request) {
       obituary: { select: { intake: true, draft: true } },
     },
   });
+  if (!records) return denied();
 
-  if (!user || !user.survivorAccess) return denied();
-  const ok = await verifyVerifier(survivorAuthVerifier, user.survivorAccess.survivorAuthVerifierHash);
-  if (!ok) return denied();
-
-  return NextResponse.json({
-    escrow: {
-      ciphertext: user.survivorAccess.escrowCiphertext,
-      iv: user.survivorAccess.escrowIv,
-    },
-    records: {
-      items: user.vaultItems,
-      accounts: user.financialAccounts,
-      bills: user.bills,
-      loans: user.loans,
-      beneficiaries: user.beneficiaries,
-      documents: user.documents,
-      obituary: user.obituary,
-    },
-  });
+  return noStore(
+    NextResponse.json({
+      escrow: { ciphertext: access.escrowCiphertext, iv: access.escrowIv },
+      records: {
+        items: records.vaultItems,
+        accounts: records.financialAccounts,
+        bills: records.bills,
+        loans: records.loans,
+        beneficiaries: records.beneficiaries,
+        documents: records.documents,
+        obituary: records.obituary,
+      },
+    }),
+  );
 }
