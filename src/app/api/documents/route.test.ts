@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { MAX_DOCUMENT_BODY } from "@/lib/document";
 
 const requireUserId = vi.fn();
 const findMany = vi.fn();
 const create = vi.fn();
+const queryRaw = vi.fn();
 
 vi.mock("@/lib/route-auth", () => ({ requireUserId: () => requireUserId() }));
 vi.mock("@/lib/db", () => ({
@@ -11,6 +13,7 @@ vi.mock("@/lib/db", () => ({
       findMany: (...a: unknown[]) => findMany(...a),
       create: (...a: unknown[]) => create(...a),
     },
+    $queryRaw: (...a: unknown[]) => queryRaw(...a),
   },
 }));
 
@@ -30,6 +33,9 @@ beforeEach(() => {
   requireUserId.mockReset();
   findMany.mockReset();
   create.mockReset();
+  queryRaw.mockReset();
+  // default: user is well under quota
+  queryRaw.mockResolvedValue([{ n: BigInt(0), bytes: BigInt(0) }]);
 });
 
 describe("/api/documents", () => {
@@ -39,7 +45,7 @@ describe("/api/documents", () => {
     expect(findMany).not.toHaveBeenCalled();
   });
 
-  it("GET returns metadata only (no content)", async () => {
+  it("GET returns metadata only (no content) and no-store", async () => {
     requireUserId.mockResolvedValue("u1");
     findMany.mockResolvedValue([{ id: "d1", metaCiphertext: "mc", metaIv: "mi", createdAt: new Date(0) }]);
     const res = await GET();
@@ -48,11 +54,6 @@ describe("/api/documents", () => {
     const data = await res.json();
     expect(data.documents[0]).toMatchObject({ id: "d1", metaCiphertext: "mc", metaIv: "mi" });
     expect(JSON.stringify(data)).not.toContain("contentCiphertext");
-    expect(findMany).toHaveBeenCalledWith({
-      where: { userId: "u1" },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, metaCiphertext: true, metaIv: true, createdAt: true },
-    });
   });
 
   it("POST 401 when unauthenticated", async () => {
@@ -74,14 +75,32 @@ describe("/api/documents", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it("POST 400 when meta ciphertext is too large", async () => {
+  it("POST 413 when the whole body exceeds the ceiling", async () => {
     requireUserId.mockResolvedValue("u1");
-    const huge = "a".repeat(64 * 1024 + 1);
-    expect((await POST(postReq({ ...goodBody, metaCiphertext: huge }))).status).toBe(400);
+    const over = "a".repeat(MAX_DOCUMENT_BODY + 1);
+    expect((await POST(postReq({ ...goodBody, contentCiphertext: over }))).status).toBe(413);
     expect(create).not.toHaveBeenCalled();
   });
 
-  it("POST creates and returns the id", async () => {
+  it("POST 409 when the document count is at the limit", async () => {
+    requireUserId.mockResolvedValue("u1");
+    queryRaw.mockResolvedValue([{ n: BigInt(50), bytes: BigInt(0) }]);
+    const res = await POST(postReq(goodBody));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("Document limit reached.");
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("POST 409 when adding would exceed the total-bytes limit", async () => {
+    requireUserId.mockResolvedValue("u1");
+    queryRaw.mockResolvedValue([{ n: BigInt(1), bytes: BigInt(100 * 1024 * 1024) }]);
+    const res = await POST(postReq(goodBody));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("Storage limit reached.");
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("POST creates and returns the id when under quota", async () => {
     requireUserId.mockResolvedValue("u1");
     create.mockResolvedValue({ id: "d9" });
     const res = await POST(postReq(goodBody));

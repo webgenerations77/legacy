@@ -13,6 +13,15 @@ export const MAX_CONTENT_CIPHERTEXT_CHARS = 8 * 1024 * 1024;
 /** Server-side guard on stored metadata ciphertext length (encrypts a tiny {filename, contentType, size} JSON; 64 KB is generous). */
 export const MAX_META_CIPHERTEXT_CHARS = 64 * 1024;
 
+/** Ceiling on the whole /api/documents POST JSON body (content + meta ciphertext + JSON overhead). */
+export const MAX_DOCUMENT_BODY = MAX_CONTENT_CIPHERTEXT_CHARS + MAX_META_CIPHERTEXT_CHARS + 4 * 1024;
+
+/** Max number of documents a single user may store. */
+export const MAX_DOCUMENTS_PER_USER = 50;
+
+/** Max total content-ciphertext characters (base64) across a user's documents (~100 MB). */
+export const MAX_TOTAL_CONTENT_BYTES = 100 * 1024 * 1024;
+
 const ALLOWED_CONTENT_TYPES = new Set([
   "application/pdf",
   "image/png",
