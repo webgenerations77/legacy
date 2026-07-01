@@ -41,6 +41,8 @@ model VaultItem {
   iv         String
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model FinancialAccount {
@@ -50,6 +52,8 @@ model FinancialAccount {
   iv         String
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Bill {
@@ -59,6 +63,8 @@ model Bill {
   iv         String
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Loan {
@@ -68,6 +74,8 @@ model Loan {
   iv         String
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Beneficiary {
@@ -77,6 +85,8 @@ model Beneficiary {
   iv         String
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Obituary {
@@ -120,4 +130,6 @@ model Document {
   contentIv         String
   createdAt         DateTime @default(now())
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
