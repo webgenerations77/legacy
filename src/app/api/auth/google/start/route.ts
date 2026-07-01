@@ -4,7 +4,9 @@ import { createGoogleAuthUrl } from "@/lib/oauth-google";
 
 const TEN_MINUTES = 600;
 
-export async function GET() {
+export async function GET(req: Request) {
+  const intent = new URL(req.url).searchParams.get("intent") === "link" ? "link" : "login";
+
   const state = generateState();
   const codeVerifier = generateCodeVerifier();
   const url = createGoogleAuthUrl(state, codeVerifier);
@@ -19,5 +21,6 @@ export async function GET() {
   };
   res.cookies.set("google_oauth_state", state, opts);
   res.cookies.set("google_code_verifier", codeVerifier, opts);
+  res.cookies.set("google_oauth_intent", intent, opts);
   return res;
 }

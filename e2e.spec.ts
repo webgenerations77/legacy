@@ -33,6 +33,7 @@ import {
 } from "@/lib/survivor-crypto";
 import { encryptBytes, decryptBytes } from "@/lib/crypto";
 import { serializeMeta, parseMeta, type DocumentMeta } from "@/lib/document";
+import { signPendingLink, PENDING_LINK_COOKIE } from "@/lib/link-token";
 
 const BASE = "http://localhost:3000";
 // Inspect the DEV database directly (the server writes here). vitest.setup loads
@@ -818,4 +819,81 @@ describe("walking skeleton (live)", () => {
     // cleanup
     await db.user.delete({ where: { email: hEmail } });
   }, 60_000);
+});
+
+describe("google account-linking (live)", () => {
+  const linkEmail = `e2e-link-${Date.now()}@example.com`;
+  const linkPass = "link-passphrase-123";
+  const googleId = `e2e-google-${Date.now()}`;
+  const linkSecret = config({ path: ".env" }).parsed?.LINK_STATE_SECRET as string;
+
+  afterAll(async () => {
+    await db.user.deleteMany({ where: { email: linkEmail } });
+  });
+
+  it("links Google to a password account, then unlinks — no plaintext leaves the client", async () => {
+    // Register a password-only account.
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(linkPass, salt);
+    const av = await deriveAuthVerifier(mk, linkPass);
+    const reg = await fetch(`${BASE}/api/auth/register`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: linkEmail, salt, authVerifier: av }),
+    });
+    expect(reg.status).toBe(201);
+
+    // Mint a pending-link cookie exactly as the callback would (Google step is
+    // out of band for the headless harness), then confirm the link with the passphrase.
+    const pending = signPendingLink({ googleId, email: linkEmail }, linkSecret);
+    const linkRes = await fetch(`${BASE}/api/auth/google/link`, {
+      method: "POST",
+      headers: { ...json, cookie: `${PENDING_LINK_COOKIE}=${pending}` },
+      body: JSON.stringify({ authVerifier: av }),
+    });
+    expect(linkRes.status).toBe(200);
+
+    // The server persisted the googleId; it never saw the passphrase or master key.
+    const linked = await db.user.findUnique({ where: { email: linkEmail } });
+    expect(linked?.googleId).toBe(googleId);
+
+    // Capture the session cookie the link set, then unlink with it + the passphrase.
+    const setCookies = linkRes.headers.getSetCookie?.() ?? [];
+    const session = setCookies.find((c) => c.startsWith("legacy_session="))?.split(";")[0] ?? "";
+    expect(session).not.toBe("");
+    const unlinkRes = await fetch(`${BASE}/api/auth/google/unlink`, {
+      method: "POST",
+      headers: { ...json, cookie: session },
+      body: JSON.stringify({ authVerifier: av }),
+    });
+    expect(unlinkRes.status).toBe(200);
+    const unlinked = await db.user.findUnique({ where: { email: linkEmail } });
+    expect(unlinked?.googleId).toBeNull();
+  });
+
+  it("rejects a wrong passphrase (401) and an expired/tampered cookie (400)", async () => {
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(linkPass, salt);
+    const av = await deriveAuthVerifier(mk, linkPass);
+    await fetch(`${BASE}/api/auth/register`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ email: linkEmail, salt, authVerifier: av }),
+    }); // 201 or 409 if the previous test's row lingered — either is fine here.
+
+    const pending = signPendingLink({ googleId, email: linkEmail }, linkSecret);
+    const wrongPass = await fetch(`${BASE}/api/auth/google/link`, {
+      method: "POST",
+      headers: { ...json, cookie: `${PENDING_LINK_COOKIE}=${pending}` },
+      body: JSON.stringify({ authVerifier: "not-the-verifier" }),
+    });
+    expect(wrongPass.status).toBe(401);
+
+    const badCookie = await fetch(`${BASE}/api/auth/google/link`, {
+      method: "POST",
+      headers: { ...json, cookie: `${PENDING_LINK_COOKIE}=garbage.value` },
+      body: JSON.stringify({ authVerifier: av }),
+    });
+    expect(badCookie.status).toBe(400);
+  });
 });

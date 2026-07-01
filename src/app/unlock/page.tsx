@@ -8,11 +8,9 @@ import { BrandHeader } from "@/components/Logo";
 import { useKey } from "@/app/providers/KeyProvider";
 import { generateSalt, deriveMasterKey, deriveAuthVerifier } from "@/lib/crypto";
 
-type Mode = "loading" | "email" | "create" | "enter";
+type Mode = "loading" | "email" | "create" | "enter" | "link";
 
 const ERRORS: Record<string, string> = {
-  email_exists:
-    "An account with that email already exists. Sign in with your passphrase below (Google linking is coming soon).",
   google_failed: "Google sign-in didn't complete. Please try again.",
   google_unverified: "Your Google email isn't verified, so we can't create an account.",
 };
@@ -24,12 +22,30 @@ export default function UnlockPage() {
   const [salt, setSalt] = useState("");
   const [email, setEmail] = useState("");
   const [passphrase, setPassphrase] = useState("");
+  const [linkEmail, setLinkEmail] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("error");
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("error");
     if (q && ERRORS[q]) setError(ERRORS[q]);
+
+    if (params.get("link") === "confirm") {
+      api
+        .pendingLink()
+        .then(({ email }) => {
+          if (email) {
+            setLinkEmail(email);
+            setMode("link");
+          } else {
+            setMode("email");
+          }
+        })
+        .catch(() => setMode("email"));
+      return;
+    }
+
     api
       .vaultStatus()
       .then((status) => {
@@ -102,6 +118,28 @@ export default function UnlockPage() {
     }
   }
 
+  async function onLinkSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      const { salt: s } = await api.getSalt(linkEmail).catch(() => {
+        throw new Error("That passphrase didn't match.");
+      });
+      const masterKey = await deriveMasterKey(passphrase, s);
+      const authVerifier = await deriveAuthVerifier(masterKey, passphrase);
+      await api.googleLink(authVerifier).catch(() => {
+        throw new Error("That passphrase didn't match.");
+      });
+      setMasterKey(masterKey);
+      router.push("/vault");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (mode === "loading") {
     return (
       <main className="center">
@@ -148,6 +186,26 @@ export default function UnlockPage() {
           <button type="submit" disabled={busy}>
             {busy ? "Unlocking…" : "Unlock"}
           </button>
+          {error && <p className="error">{error}</p>}
+        </form>
+      </main>
+    );
+  }
+
+  if (mode === "link") {
+    return (
+      <main className="center">
+        <form className="card" onSubmit={onLinkSubmit}>
+          <BrandHeader />
+          <h1>Link Google to your account</h1>
+          <p className="subtle">
+            This email already has a Legacy account. Enter your vault passphrase to link Google
+            and unlock your vault.
+          </p>
+          <label htmlFor="pass">Passphrase</label>
+          <input id="pass" type="password" value={passphrase}
+            onChange={(e) => setPassphrase(e.target.value)} required />
+          <button type="submit" disabled={busy}>{busy ? "Linking…" : "Link & unlock"}</button>
           {error && <p className="error">{error}</p>}
         </form>
       </main>
