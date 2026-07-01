@@ -49,3 +49,47 @@ describe("crypto core", () => {
     expect(v1a).not.toBe(v2);
   });
 });
+
+import { bytesToBase64, base64ToBytes } from "./crypto";
+
+describe("base64 helpers", () => {
+  it("round-trips arbitrary bytes", () => {
+    const bytes = new Uint8Array([0, 1, 2, 250, 251, 255, 128, 7]);
+    const b64 = bytesToBase64(bytes);
+    expect(typeof b64).toBe("string");
+    expect(Array.from(base64ToBytes(b64))).toEqual(Array.from(bytes));
+  });
+
+  it("base64ToBytes is backed by a real ArrayBuffer (usable by WebCrypto)", () => {
+    const out = base64ToBytes(bytesToBase64(new Uint8Array([9, 9, 9])));
+    expect(out.buffer).toBeInstanceOf(ArrayBuffer);
+  });
+});
+
+import { encryptBytes, decryptBytes } from "./crypto";
+
+describe("binary encrypt/decrypt", () => {
+  it("round-trips arbitrary binary bytes", async () => {
+    const key = await deriveMasterKey("file-pass", generateSalt());
+    const bytes = new Uint8Array([0, 1, 2, 250, 255, 128, 7, 13, 0, 99]);
+    const { ciphertext, iv } = await encryptBytes(key, bytes);
+    const out = await decryptBytes(key, ciphertext, iv);
+    expect(Array.from(out)).toEqual(Array.from(bytes));
+  });
+
+  it("uses a random IV (different ciphertext each time)", async () => {
+    const key = await deriveMasterKey("pw", generateSalt());
+    const bytes = new Uint8Array([1, 2, 3]);
+    const a = await encryptBytes(key, bytes);
+    const b = await encryptBytes(key, bytes);
+    expect(a.ciphertext).not.toBe(b.ciphertext);
+  });
+
+  it("fails to decrypt with the wrong key", async () => {
+    const salt = generateSalt();
+    const good = await deriveMasterKey("right", salt);
+    const bad = await deriveMasterKey("wrong", salt);
+    const { ciphertext, iv } = await encryptBytes(good, new Uint8Array([5, 6, 7]));
+    await expect(decryptBytes(bad, ciphertext, iv)).rejects.toBeDefined();
+  });
+});

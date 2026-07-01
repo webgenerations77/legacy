@@ -6,6 +6,7 @@ import {
   createSession,
   getSessionUserId,
   deleteSession,
+  DECOY_VERIFIER_HASH,
 } from "@/lib/auth";
 
 let userId: string;
@@ -44,5 +45,12 @@ describe("auth", () => {
     const sid = await createSession(userId);
     await deleteSession(sid);
     expect(await getSessionUserId(sid)).toBeNull();
+  });
+});
+
+describe("DECOY_VERIFIER_HASH", () => {
+  it("is a bcrypt hash that no real verifier matches", async () => {
+    expect(DECOY_VERIFIER_HASH.startsWith("$2")).toBe(true);
+    expect(await verifyVerifier("anything", DECOY_VERIFIER_HASH)).toBe(false);
   });
 });

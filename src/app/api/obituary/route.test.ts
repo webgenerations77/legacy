@@ -57,6 +57,7 @@ describe("obituary persistence route", () => {
     findUnique.mockResolvedValue({ intake, draft: "Saved text." });
     const res = await GET();
     expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
     expect(await res.json()).toEqual({
       obituary: { intake, draft: "Saved text." },
     });

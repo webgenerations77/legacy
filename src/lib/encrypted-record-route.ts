@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/auth";
 import { SESSION_COOKIE } from "@/lib/session-cookie";
-import { readJsonBody } from "@/lib/http";
+import { readJsonBody, noStore } from "@/lib/http";
 
 type RecordModel = "vaultItem" | "financialAccount" | "bill" | "loan" | "beneficiary";
 
@@ -57,7 +57,7 @@ export function createEncryptedRecordRoute(opts: { model: RecordModel; listKey: 
       orderBy: { createdAt: "desc" },
       select: { id: true, ciphertext: true, iv: true },
     });
-    return NextResponse.json({ [opts.listKey]: rows });
+    return noStore(NextResponse.json({ [opts.listKey]: rows }));
   }
 
   async function POST(req: Request) {

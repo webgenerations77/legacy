@@ -22,6 +22,14 @@ function b64ToBytes(b64: string): CryptoBytes {
   return out;
 }
 
+/** Public wrappers so callers can wrap/unwrap raw key bytes as a base64 string. */
+export function bytesToBase64(bytes: Uint8Array): string {
+  return bytesToB64(bytes);
+}
+export function base64ToBytes(b64: string): CryptoBytes {
+  return b64ToBytes(b64);
+}
+
 function randomBytes(n: number): CryptoBytes {
   const b = new Uint8Array(n);
   crypto.getRandomValues(b);
@@ -113,4 +121,28 @@ export async function decryptItem(
     b64ToBytes(ciphertext),
   );
   return dec.decode(pt);
+}
+
+export async function encryptBytes(
+  masterKey: CryptoBytes,
+  bytes: CryptoBytes,
+): Promise<{ ciphertext: string; iv: string }> {
+  const key = await importAesKey(masterKey);
+  const iv = randomBytes(IV_BYTES);
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, bytes);
+  return { ciphertext: bytesToB64(new Uint8Array(ct)), iv: bytesToB64(iv) };
+}
+
+export async function decryptBytes(
+  masterKey: CryptoBytes,
+  ciphertext: string,
+  iv: string,
+): Promise<CryptoBytes> {
+  const key = await importAesKey(masterKey);
+  const pt = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: b64ToBytes(iv) },
+    key,
+    b64ToBytes(ciphertext),
+  );
+  return new Uint8Array(pt);
 }

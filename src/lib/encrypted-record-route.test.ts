@@ -57,6 +57,13 @@ describe("createEncryptedRecordRoute", () => {
     });
   });
 
+  it("GET marks the ciphertext list no-store", async () => {
+    getSessionUserId.mockResolvedValue("user-1");
+    findMany.mockResolvedValue([{ id: "b1", ciphertext: "c", iv: "i" }]);
+    const res = await GET();
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
   it("POST returns 401 when unauthenticated", async () => {
     getSessionUserId.mockResolvedValue(null);
     const res = await POST(postReq({ ciphertext: "c", iv: "i" }));

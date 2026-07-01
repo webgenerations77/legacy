@@ -16,6 +16,13 @@ export async function verifyVerifier(
   return bcrypt.compare(authVerifier, hash);
 }
 
+/**
+ * A fixed bcrypt hash used only for timing parity. Routes that must not reveal
+ * whether an account exists / is armed run one `verifyVerifier` against this
+ * decoy when there is no real hash, so the response time matches the real path.
+ */
+export const DECOY_VERIFIER_HASH = bcrypt.hashSync("legacy-decoy-verifier", BCRYPT_ROUNDS);
+
 export async function createSession(userId: string): Promise<string> {
   const id = randomBytes(32).toString("base64url");
   const expiresAt = sessionExpiry();

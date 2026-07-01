@@ -77,3 +77,25 @@ Requires: `npm run dev`, dev DB, a logged-in user with the vault unlocked, real 
       `/api/assistant/chat` (it returns a stream, stores nothing).
 - [ ] Edit mode still works: open `/assistant?type=loans&id=<id>` → pinned banner,
       no interview button, Save fires PUT.
+
+---
+
+## Sprint 4 — Survivor mode
+
+- Survivor mode (Sprint 4 Slice 1): see `manual-verification-survivor.md`. Note: requires `SURVIVOR_SALT_SECRET` env var in `.env`/`.env.test`.
+
+---
+
+## Sprint 4 · Slice 3 — Verification & Hardening (live checks)
+
+Code-complete; unit gates green. Live checks to run with `npm run dev` + dev DB
+(`SURVIVOR_SALT_SECRET` set):
+
+- [ ] `npx vitest run --config vitest.e2e.config.ts` is green (incl. the new
+      body-ceiling / no-store / quota spec).
+- [ ] A record POST body over 256 KB returns **413**; the documents POST accepts
+      a normal ~5 MB file (body under the ~9 MB ceiling).
+- [ ] DevTools → Network: record-list and document GETs carry
+      `Cache-Control: no-store`.
+- [ ] Survivor claim still round-trips (arm → /recover → decrypt), and a wrong
+      code returns a generic 401.

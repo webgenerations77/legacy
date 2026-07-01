@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUserId } from "@/lib/route-auth";
-import { readJsonBody } from "@/lib/http";
+import { readJsonBody, noStore } from "@/lib/http";
 
 export async function GET() {
   const userId = await requireUserId();
@@ -11,7 +11,7 @@ export async function GET() {
     where: { userId },
     select: { ciphertext: true, iv: true },
   });
-  return NextResponse.json({ state: row });
+  return noStore(NextResponse.json({ state: row }));
 }
 
 export async function PUT(req: Request) {
