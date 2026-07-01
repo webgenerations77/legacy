@@ -13,12 +13,14 @@ import { parseMeta, type DocumentMeta } from "@/lib/document";
 
 type DocEntry = { id: string; meta: DocumentMeta };
 
+type Ided<T> = { id: string; value: T };
+
 type Decrypted = {
-  accounts: Account[];
-  bills: Bill[];
-  loans: Loan[];
-  beneficiaries: Beneficiary[];
-  notes: string[];
+  accounts: Ided<Account>[];
+  bills: Ided<Bill>[];
+  loans: Ided<Loan>[];
+  beneficiaries: Ided<Beneficiary>[];
+  notes: Ided<string>[];
   documents: DocEntry[];
   obituary: string | null;
 };
@@ -27,23 +29,23 @@ type Session = { email: string; verifier: string; mk: CryptoBytes };
 
 async function decryptAll(mk: CryptoBytes, records: SurvivorRecords): Promise<Decrypted> {
   const tryParse = async <T,>(
-    rows: { ciphertext: string; iv: string }[],
+    rows: { id: string; ciphertext: string; iv: string }[],
     parse: (json: string) => T,
-  ): Promise<T[]> => {
-    const out: T[] = [];
+  ): Promise<Ided<T>[]> => {
+    const out: Ided<T>[] = [];
     for (const r of rows) {
       try {
-        out.push(parse(await decryptItem(mk, r.ciphertext, r.iv)));
+        out.push({ id: r.id, value: parse(await decryptItem(mk, r.ciphertext, r.iv)) });
       } catch {
         // skip any record that fails to decrypt
       }
     }
     return out;
   };
-  const notes: string[] = [];
+  const notes: Ided<string>[] = [];
   for (const r of records.items) {
     try {
-      notes.push(await decryptItem(mk, r.ciphertext, r.iv));
+      notes.push({ id: r.id, value: await decryptItem(mk, r.ciphertext, r.iv) });
     } catch {
       // skip
     }
@@ -151,8 +153,8 @@ export default function RecoverPage() {
           {data.notes.length > 0 && (
             <section>
               <h2>Notes</h2>
-              {data.notes.map((n, i) => (
-                <div className="item" key={i}><div className="notes">{n}</div></div>
+              {data.notes.map((n) => (
+                <div className="item" key={n.id}><div className="notes">{n.value}</div></div>
               ))}
             </section>
           )}
@@ -160,8 +162,8 @@ export default function RecoverPage() {
           {data.accounts.length > 0 && (
             <section>
               <h2>Accounts</h2>
-              {data.accounts.map((a, i) => (
-                <div className="item" key={i}>
+              {data.accounts.map(({ id, value: a }) => (
+                <div className="item" key={id}>
                   <strong>{a.institution} — {a.nickname}</strong>
                   <div className="meta">{a.type} · {a.accountNumber} · {a.balance}</div>
                   {a.notes && <div className="notes">{a.notes}</div>}
@@ -173,8 +175,8 @@ export default function RecoverPage() {
           {data.bills.length > 0 && (
             <section>
               <h2>Bills</h2>
-              {data.bills.map((b, i) => (
-                <div className="item" key={i}>
+              {data.bills.map(({ id, value: b }) => (
+                <div className="item" key={id}>
                   <strong>{b.name}</strong>
                   <div className="meta">{b.category} · {b.amount} · {b.frequency} · due {b.nextDueDate}</div>
                   {b.notes && <div className="notes">{b.notes}</div>}
@@ -186,8 +188,8 @@ export default function RecoverPage() {
           {data.loans.length > 0 && (
             <section>
               <h2>Loans</h2>
-              {data.loans.map((l, i) => (
-                <div className="item" key={i}>
+              {data.loans.map(({ id, value: l }) => (
+                <div className="item" key={id}>
                   <strong>{l.lender} — {l.nickname}</strong>
                   <div className="meta">{l.kind} · balance {l.currentBalance} · {l.interestRate}</div>
                   {l.notes && <div className="notes">{l.notes}</div>}
@@ -199,8 +201,8 @@ export default function RecoverPage() {
           {data.beneficiaries.length > 0 && (
             <section>
               <h2>Beneficiaries</h2>
-              {data.beneficiaries.map((b, i) => (
-                <div className="item" key={i}>
+              {data.beneficiaries.map(({ id, value: b }) => (
+                <div className="item" key={id}>
                   <strong>{b.fullName}</strong>
                   <div className="meta">{b.relationship}{b.allocation ? ` · ${b.allocation}%` : ""}</div>
                   {b.email && <div className="meta">{b.email}</div>}

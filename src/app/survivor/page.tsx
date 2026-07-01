@@ -12,12 +12,17 @@ type Status = { armed: boolean; updatedAt: string | null } | null;
 export default function SurvivorPage() {
   const { masterKey } = useKey();
   const [status, setStatus] = useState<Status>(null);
+  const [loaded, setLoaded] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    api.survivorStatus().then(setStatus).catch(() => setError("Couldn't load status."));
+    api
+      .survivorStatus()
+      .then(setStatus)
+      .catch(() => setError("Couldn't load status."))
+      .finally(() => setLoaded(true));
   }, []);
 
   if (!masterKey) return null;
@@ -79,7 +84,10 @@ export default function SurvivorPage() {
             <p className="error">
               Save this now. It will not be shown again, and it cannot be recovered.
             </p>
-            <button type="button" onClick={() => navigator.clipboard?.writeText(code)}>
+            <button
+              type="button"
+              onClick={() => { void navigator.clipboard?.writeText(code)?.catch(() => {}); }}
+            >
               Copy code
             </button>
             <button type="button" onClick={() => window.print()}>
@@ -88,7 +96,9 @@ export default function SurvivorPage() {
           </div>
         )}
 
-        {status?.armed ? (
+        {!loaded ? (
+          <p className="subtle">Loading…</p>
+        ) : status?.armed ? (
           <>
             <p className="subtle">
               Survivor access is armed
