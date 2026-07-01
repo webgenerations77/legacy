@@ -17,6 +17,9 @@ import {
 
 export const MODEL_ID = "claude-opus-4-8";
 
+/** Chat bodies carry the full transcript + tool outputs; allow well beyond the default small-JSON ceiling. */
+export const MAX_CHAT_BODY = 1024 * 1024; // 1 MB
+
 // No `execute`: the model only PROPOSES a record. The client renders an
 // editable card and performs the (client-encrypted) save itself.
 const proposeRecord = tool({
@@ -37,7 +40,7 @@ export async function POST(req: Request) {
   const userId = await requireUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
-  const body = await readJsonBody(req);
+  const body = await readJsonBody(req, MAX_CHAT_BODY);
   if (body instanceof NextResponse) return body;
   const messages = (body.messages ?? []) as UIMessage[];
 

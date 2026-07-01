@@ -49,6 +49,7 @@ describe("/api/survivor/claim", () => {
     expect(await res.json()).toEqual({ error: "Could not unlock." });
     expect(accessFindFirst).not.toHaveBeenCalled();
     expect(verifyVerifier).toHaveBeenCalledWith("", "decoy-hash");
+    expect(verifyVerifier).toHaveBeenCalledTimes(1);
   });
 
   it("401 with generic body when body is malformed JSON", async () => {
@@ -68,6 +69,7 @@ describe("/api/survivor/claim", () => {
     const res = await POST(req({ email: "ghost@b.com", survivorAuthVerifier: "v" }));
     expect(res.status).toBe(401);
     expect(verifyVerifier).toHaveBeenCalledWith("v", "decoy-hash");
+    expect(verifyVerifier).toHaveBeenCalledTimes(1);
     expect(userFindUnique).not.toHaveBeenCalled();
   });
 
@@ -77,6 +79,7 @@ describe("/api/survivor/claim", () => {
     const res = await POST(req({ email: "a@b.com", survivorAuthVerifier: "wrong" }));
     expect(res.status).toBe(401);
     expect(verifyVerifier).toHaveBeenCalledWith("wrong", "hash");
+    expect(verifyVerifier).toHaveBeenCalledTimes(1);
     expect(userFindUnique).not.toHaveBeenCalled();
   });
 
@@ -99,5 +102,6 @@ describe("/api/survivor/claim", () => {
       obituary: { intake: { subjectName: "X" }, draft: "An obituary" },
     });
     expect(verifyVerifier).toHaveBeenCalledWith("right", "hash");
+    expect(verifyVerifier).toHaveBeenCalledTimes(1);
   });
 });

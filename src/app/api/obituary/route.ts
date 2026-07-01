@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireUserId } from "@/lib/route-auth";
-import { readJsonBody } from "@/lib/http";
+import { readJsonBody, noStore } from "@/lib/http";
 import { type ObituaryIntake } from "@/lib/obituary";
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
     where: { userId },
     select: { intake: true, draft: true },
   });
-  return NextResponse.json({ obituary: row });
+  return noStore(NextResponse.json({ obituary: row }));
 }
 
 export async function PUT(req: Request) {

@@ -75,6 +75,13 @@ describe("/api/documents", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  it("POST 400 when meta ciphertext is too large", async () => {
+    requireUserId.mockResolvedValue("u1");
+    const huge = "a".repeat(64 * 1024 + 1);
+    expect((await POST(postReq({ ...goodBody, metaCiphertext: huge }))).status).toBe(400);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it("POST 413 when the whole body exceeds the ceiling", async () => {
     requireUserId.mockResolvedValue("u1");
     const over = "a".repeat(MAX_DOCUMENT_BODY + 1);
