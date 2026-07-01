@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUserId } from "@/lib/route-auth";
+import { noStore } from "@/lib/http";
 
 export async function GET() {
   const userId = await requireUserId();
@@ -12,9 +13,9 @@ export async function GET() {
   });
   if (!user) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
-  return NextResponse.json({
+  return noStore(NextResponse.json({
     email: user.email,
     googleLinked: user.googleId != null,
     hasPassword: user.authVerifierHash != null,
-  });
+  }));
 }

@@ -20,7 +20,9 @@ describe("GET /api/auth/google/pending", () => {
 
   it("returns the email from a valid cookie", async () => {
     cookieVal = signPendingLink({ googleId: "g1", email: "a@example.com" }, "pending-secret");
-    expect(await (await GET()).json()).toEqual({ email: "a@example.com" });
+    const res = await GET();
+    expect(await res.json()).toEqual({ email: "a@example.com" });
+    expect(res.headers.get("cache-control")).toBe("no-store");
   });
 
   it("returns null for a tampered cookie", async () => {

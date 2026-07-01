@@ -31,6 +31,7 @@ describe("GET /api/account/status", () => {
     const res = await GET();
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ email: "a@example.com", googleLinked: true, hasPassword: true });
+    expect(res.headers.get("cache-control")).toBe("no-store");
   });
 
   it("reports not-linked + no-password when nulls", async () => {
