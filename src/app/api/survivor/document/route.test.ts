@@ -1,16 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const findUnique = vi.fn();
-const findFirst = vi.fn();
+const accessFindFirst = vi.fn();
+const docFindFirst = vi.fn();
 const verifyVerifier = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { findUnique: (...a: unknown[]) => findUnique(...a) },
-    document: { findFirst: (...a: unknown[]) => findFirst(...a) },
+    survivorAccess: { findFirst: (...a: unknown[]) => accessFindFirst(...a) },
+    document: { findFirst: (...a: unknown[]) => docFindFirst(...a) },
   },
 }));
-vi.mock("@/lib/auth", () => ({ verifyVerifier: (...a: unknown[]) => verifyVerifier(...a) }));
+vi.mock("@/lib/auth", () => ({
+  verifyVerifier: (...a: unknown[]) => verifyVerifier(...a),
+  DECOY_VERIFIER_HASH: "decoy-hash",
+}));
 
 import { POST } from "./route";
 
@@ -23,52 +26,62 @@ function req(body: unknown) {
 }
 
 const ok = { email: "a@b.com", survivorAuthVerifier: "v", documentId: "d1" };
-const userRow = { id: "u1", survivorAccess: { survivorAuthVerifierHash: "hash" } };
+const accessRow = { userId: "u1", survivorAuthVerifierHash: "hash" };
 
 beforeEach(() => {
-  findUnique.mockReset();
-  findFirst.mockReset();
+  accessFindFirst.mockReset();
+  docFindFirst.mockReset();
   verifyVerifier.mockReset();
 });
 
 describe("/api/survivor/document", () => {
-  it("401 generic when fields are missing", async () => {
-    const res = await POST(req({ email: "a@b.com" }));
+  it("401 + decoy verify when fields are missing (no DB hit)", async () => {
+    const res = await POST(req({ email: "a@b.com", survivorAuthVerifier: "v" }));
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: "Could not unlock." });
-    expect(findUnique).not.toHaveBeenCalled();
+    expect(accessFindFirst).not.toHaveBeenCalled();
+    expect(verifyVerifier).toHaveBeenCalledWith("v", "decoy-hash");
+    expect(verifyVerifier).toHaveBeenCalledTimes(1);
   });
 
-  it("401 when no survivor access", async () => {
-    findUnique.mockResolvedValue(null);
-    expect((await POST(req(ok))).status).toBe(401);
-  });
-
-  it("401 when the verifier does not match", async () => {
-    findUnique.mockResolvedValue(userRow);
+  it("runs a decoy verify (parity) and denies when no survivor access", async () => {
+    accessFindFirst.mockResolvedValue(null);
     verifyVerifier.mockResolvedValue(false);
     expect((await POST(req(ok))).status).toBe(401);
-    expect(findFirst).not.toHaveBeenCalled();
+    expect(verifyVerifier).toHaveBeenCalledWith("v", "decoy-hash");
+    expect(verifyVerifier).toHaveBeenCalledTimes(1);
+    expect(docFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("401 when the verifier does not match (doc never queried)", async () => {
+    accessFindFirst.mockResolvedValue(accessRow);
+    verifyVerifier.mockResolvedValue(false);
+    expect((await POST(req(ok))).status).toBe(401);
+    expect(verifyVerifier).toHaveBeenCalledWith("v", "hash");
+    expect(verifyVerifier).toHaveBeenCalledTimes(1);
+    expect(docFindFirst).not.toHaveBeenCalled();
   });
 
   it("401 (not 404) when the document is unknown", async () => {
-    findUnique.mockResolvedValue(userRow);
+    accessFindFirst.mockResolvedValue(accessRow);
     verifyVerifier.mockResolvedValue(true);
-    findFirst.mockResolvedValue(null);
+    docFindFirst.mockResolvedValue(null);
     const res = await POST(req(ok));
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: "Could not unlock." });
   });
 
-  it("returns the content blob on a correct verifier + owned doc", async () => {
-    findUnique.mockResolvedValue(userRow);
+  it("returns the content blob + no-store on a correct verifier + owned doc", async () => {
+    accessFindFirst.mockResolvedValue(accessRow);
     verifyVerifier.mockResolvedValue(true);
-    findFirst.mockResolvedValue({ contentCiphertext: "cc", contentIv: "ci" });
+    docFindFirst.mockResolvedValue({ contentCiphertext: "cc", contentIv: "ci" });
     const res = await POST(req(ok));
     expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
     expect(await res.json()).toEqual({ contentCiphertext: "cc", contentIv: "ci" });
     expect(verifyVerifier).toHaveBeenCalledWith("v", "hash");
-    expect(findFirst).toHaveBeenCalledWith({
+    expect(verifyVerifier).toHaveBeenCalledTimes(1);
+    expect(docFindFirst).toHaveBeenCalledWith({
       where: { id: "d1", userId: "u1" },
       select: { contentCiphertext: true, contentIv: true },
     });

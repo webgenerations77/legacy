@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyVerifier } from "@/lib/auth";
-import { readJsonBody } from "@/lib/http";
+import { verifyVerifier, DECOY_VERIFIER_HASH } from "@/lib/auth";
+import { readJsonBody, noStore } from "@/lib/http";
 
 const denied = () => NextResponse.json({ error: "Could not unlock." }, { status: 401 });
 
@@ -13,21 +13,25 @@ export async function POST(req: Request) {
   const survivorAuthVerifier =
     typeof body.survivorAuthVerifier === "string" ? body.survivorAuthVerifier : "";
   const documentId = typeof body.documentId === "string" ? body.documentId : "";
-  if (!email || !survivorAuthVerifier || !documentId) return denied();
+  if (!email || !survivorAuthVerifier || !documentId) {
+    await verifyVerifier(survivorAuthVerifier, DECOY_VERIFIER_HASH);
+    return denied();
+  }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, survivorAccess: { select: { survivorAuthVerifierHash: true } } },
+  const access = await prisma.survivorAccess.findFirst({
+    where: { user: { email } },
+    select: { userId: true, survivorAuthVerifierHash: true },
   });
-  if (!user || !user.survivorAccess) return denied();
-
-  const ok = await verifyVerifier(survivorAuthVerifier, user.survivorAccess.survivorAuthVerifierHash);
-  if (!ok) return denied();
+  const ok = await verifyVerifier(
+    survivorAuthVerifier,
+    access?.survivorAuthVerifierHash ?? DECOY_VERIFIER_HASH,
+  );
+  if (!access || !ok) return denied();
 
   const doc = await prisma.document.findFirst({
-    where: { id: documentId, userId: user.id },
+    where: { id: documentId, userId: access.userId },
     select: { contentCiphertext: true, contentIv: true },
   });
   if (!doc) return denied();
-  return NextResponse.json(doc);
+  return noStore(NextResponse.json(doc));
 }
