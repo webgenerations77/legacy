@@ -13,6 +13,8 @@ model User {
   googleId         String?     @unique
   kdfSalt          String?
   authVerifierHash String?
+  wrappedKeyCiphertext String?
+  wrappedKeyIv         String?
   createdAt        DateTime    @default(now())
   sessions          Session[]
   vaultItems        VaultItem[]
