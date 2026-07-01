@@ -12,6 +12,8 @@ import {
   deriveAuthVerifier,
   encryptItem,
   decryptItem,
+  wrapDataKey,
+  unwrapDataKey,
 } from "@/lib/crypto";
 import { serializeAccount, parseAccount, type Account } from "@/lib/account";
 import { serializeBill, parseBill, type Bill } from "@/lib/bill";
@@ -895,5 +897,125 @@ describe("google account-linking (live)", () => {
       body: JSON.stringify({ authVerifier: av }),
     });
     expect(badCookie.status).toBe(400);
+  });
+});
+
+describe("change vault passphrase (live)", () => {
+  const cpEmail = `e2e-cp-${Date.now()}@example.com`;
+  const oldPass = "old-passphrase-123";
+  const newPass = "new-passphrase-456";
+  const secretText = "The spare key is under the third flowerpot.";
+
+  afterAll(async () => {
+    await db.user.deleteMany({ where: { email: cpEmail } });
+  });
+
+  it("rotates the passphrase without re-encrypting data or breaking survivor access", async () => {
+    // Register (legacy account: DK == master key derived from the passphrase).
+    const oldSalt = generateSalt();
+    const dk = await deriveMasterKey(oldPass, oldSalt); // this is the permanent data key
+    const oldAv = await deriveAuthVerifier(dk, oldPass);
+    const reg = await fetch(`${BASE}/api/auth/register`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: cpEmail, salt: oldSalt, authVerifier: oldAv }),
+    });
+    expect(reg.status).toBe(201);
+
+    // Log in → session cookie.
+    const login = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: cpEmail, authVerifier: oldAv }),
+    });
+    expect(login.status).toBe(200);
+    const session = (login.headers.getSetCookie?.() ?? []).find((c) => c.startsWith("legacy_session="))?.split(";")[0] ?? "";
+    expect(session).not.toBe("");
+    const authed = { ...json, cookie: session };
+
+    // Store an encrypted vault item under the data key.
+    const item = await encryptItem(dk, secretText);
+    const add = await fetch(`${BASE}/api/vault`, {
+      method: "POST", headers: authed, body: JSON.stringify(item),
+    });
+    expect(add.status).toBe(201);
+
+    // Arm survivor (escrow wraps the data key). Record the escrow to prove it is untouched.
+    const arm = await buildSurvivorEscrow(dk);
+    const armRes = await fetch(`${BASE}/api/survivor`, {
+      method: "POST", headers: authed,
+      body: JSON.stringify({
+        survivorSalt: arm.survivorSalt,
+        survivorAuthVerifier: arm.survivorAuthVerifier,
+        escrowCiphertext: arm.escrowCiphertext,
+        escrowIv: arm.escrowIv,
+      }),
+    });
+    expect(armRes.status).toBe(200);
+    const escrowBefore = await db.survivorAccess.findFirst({
+      where: { user: { email: cpEmail } },
+      select: { escrowCiphertext: true, escrowIv: true },
+    });
+
+    // Change the passphrase: re-wrap the SAME data key under a new KEK.
+    const newSalt = generateSalt();
+    const newKek = await deriveMasterKey(newPass, newSalt);
+    const wrapped = await wrapDataKey(newKek, dk);
+    const newAv = await deriveAuthVerifier(newKek, newPass);
+    const change = await fetch(`${BASE}/api/auth/vault/change-passphrase`, {
+      method: "POST", headers: authed,
+      body: JSON.stringify({
+        currentAuthVerifier: oldAv,
+        kdfSalt: newSalt,
+        wrappedKeyCiphertext: wrapped.ciphertext,
+        wrappedKeyIv: wrapped.iv,
+        authVerifier: newAv,
+      }),
+    });
+    expect(change.status).toBe(200);
+
+    // DB: authVerifierHash changed (bcrypt) and wrappedKeyCiphertext now populated.
+    const row = await db.user.findUnique({
+      where: { email: cpEmail },
+      select: { authVerifierHash: true, wrappedKeyCiphertext: true, kdfSalt: true },
+    });
+    expect(row?.wrappedKeyCiphertext).toBeTruthy();
+    expect(row?.authVerifierHash?.startsWith("$2")).toBe(true);
+    expect(row?.kdfSalt).toBe(newSalt);
+
+    // Survivor escrow is byte-for-byte unchanged (data key never moved).
+    const escrowAfter = await db.survivorAccess.findFirst({
+      where: { user: { email: cpEmail } },
+      select: { escrowCiphertext: true, escrowIv: true },
+    });
+    expect(escrowAfter).toEqual(escrowBefore);
+    // …and it still recovers the same data key.
+    const recovered = await recoverMasterKey(arm.recoveryCode, arm.survivorSalt, arm.escrowCiphertext, arm.escrowIv);
+    expect(Array.from(recovered)).toEqual(Array.from(dk));
+
+    // Old passphrase no longer logs in.
+    const oldLogin = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: cpEmail, authVerifier: oldAv }),
+    });
+    expect(oldLogin.status).toBe(401);
+
+    // New passphrase logs in, unwraps the data key, and decrypts the stored item.
+    const newLogin = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: cpEmail, authVerifier: newAv }),
+    });
+    expect(newLogin.status).toBe(200);
+    const session2 = (newLogin.headers.getSetCookie?.() ?? []).find((c) => c.startsWith("legacy_session="))?.split(";")[0] ?? "";
+    const authed2 = { cookie: session2 };
+
+    const wkRes = await fetch(`${BASE}/api/auth/vault/wrapped-key`, { headers: authed2 });
+    expect(wkRes.status).toBe(200);
+    const wk = await wkRes.json();
+    const dk2 = await unwrapDataKey(newKek, wk.wrappedKeyCiphertext, wk.wrappedKeyIv);
+    expect(Array.from(dk2)).toEqual(Array.from(dk));
+
+    const listRes = await fetch(`${BASE}/api/vault`, { headers: authed2 });
+    const list = (await listRes.json()) as { items: Array<{ ciphertext: string; iv: string }> };
+    const decrypted = await Promise.all(list.items.map((r) => decryptItem(dk2, r.ciphertext, r.iv)));
+    expect(decrypted).toContain(secretText);
   });
 });
