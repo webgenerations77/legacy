@@ -25,7 +25,7 @@ export async function readJsonBody(
   } catch {
     return badBody();
   }
-  if (raw.length > maxBytes) return tooLarge();
+  if (new TextEncoder().encode(raw).length > maxBytes) return tooLarge();
 
   try {
     const body = JSON.parse(raw);

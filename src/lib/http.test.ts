@@ -44,6 +44,19 @@ describe("readJsonBody", () => {
     expect(((await readJsonBody(stub, 10)) as NextResponse).status).toBe(413);
   });
 
+  it("413 measures UTF-8 bytes, not code units, for multi-byte bodies", async () => {
+    const body = "猫".repeat(20); // 20 code units, 60 UTF-8 bytes
+    expect(body.length).toBeLessThanOrEqual(30);
+    expect(new TextEncoder().encode(body).length).toBeGreaterThan(30);
+    const stub = {
+      headers: { get: () => null },
+      text: async () => body,
+    } as unknown as Request;
+    const out = await readJsonBody(stub, 30);
+    expect(out).toBeInstanceOf(NextResponse);
+    expect((out as NextResponse).status).toBe(413);
+  });
+
   it("defaults the ceiling to MAX_JSON_BODY", async () => {
     expect(MAX_JSON_BODY).toBe(256 * 1024);
     expect(await readJsonBody(jsonReq({ ok: true }))).toEqual({ ok: true });
