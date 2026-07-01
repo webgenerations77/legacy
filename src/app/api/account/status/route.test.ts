@@ -19,6 +19,12 @@ describe("GET /api/account/status", () => {
     expect(findUnique).not.toHaveBeenCalled();
   });
 
+  it("401 when the user row is missing", async () => {
+    requireUserId.mockResolvedValue("u1");
+    findUnique.mockResolvedValue(null);
+    expect((await GET()).status).toBe(401);
+  });
+
   it("reports linked + hasPassword flags", async () => {
     requireUserId.mockResolvedValue("u1");
     findUnique.mockResolvedValue({ email: "a@example.com", googleId: "g1", authVerifierHash: "$2..." });
@@ -31,6 +37,7 @@ describe("GET /api/account/status", () => {
     requireUserId.mockResolvedValue("u1");
     findUnique.mockResolvedValue({ email: "a@example.com", googleId: null, authVerifierHash: null });
     const res = await GET();
+    expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ email: "a@example.com", googleLinked: false, hasPassword: false });
   });
 });
