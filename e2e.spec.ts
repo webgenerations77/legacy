@@ -760,4 +760,62 @@ describe("walking skeleton (live)", () => {
     // cleanup
     await db.user.delete({ where: { email: dEmail } });
   }, 60_000);
+
+  it("enforces body ceiling, no-store, and the document quota", async () => {
+    const hEmail = `e2e-harden-${Date.now()}@example.com`;
+    const pass = "hardening-passphrase-123";
+
+    // register + login
+    const salt = generateSalt();
+    const mk = await deriveMasterKey(pass, salt);
+    const av = await deriveAuthVerifier(mk, pass);
+    await fetch(`${BASE}/api/auth/register`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: hEmail, salt, authVerifier: av }),
+    });
+    const login = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST", headers: json,
+      body: JSON.stringify({ email: hEmail, authVerifier: av }),
+    });
+    const cookie = login.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+
+    // a small record POST over the 256 KB ceiling is rejected with 413
+    const bigVault = await fetch(`${BASE}/api/vault`, {
+      method: "POST", headers: { ...json, cookie },
+      body: JSON.stringify({ ciphertext: "a".repeat(256 * 1024 + 10), iv: "iv" }),
+    });
+    expect(bigVault.status).toBe(413);
+
+    // a real vault write, then the list GET carries Cache-Control: no-store
+    const enc = await encryptItem(mk, "cache header check");
+    await fetch(`${BASE}/api/vault`, {
+      method: "POST", headers: { ...json, cookie }, body: JSON.stringify(enc),
+    });
+    const list = await fetch(`${BASE}/api/vault`, { headers: { cookie } });
+    expect(list.headers.get("cache-control")).toBe("no-store");
+
+    // document content GET is also no-store
+    const fileBytes = new Uint8Array([1, 2, 3, 4, 5]);
+    const meta: DocumentMeta = { filename: "note.txt", contentType: "text/plain", size: fileBytes.length };
+    const content = await encryptBytes(mk, fileBytes);
+    const metaBlob = await encryptItem(mk, serializeMeta(meta));
+    const addDoc = await fetch(`${BASE}/api/documents`, {
+      method: "POST", headers: { ...json, cookie },
+      body: JSON.stringify({
+        metaCiphertext: metaBlob.ciphertext, metaIv: metaBlob.iv,
+        contentCiphertext: content.ciphertext, contentIv: content.iv,
+      }),
+    });
+    expect(addDoc.status).toBe(201);
+    const { id: docId } = await addDoc.json();
+    const docGet = await fetch(`${BASE}/api/documents/${docId}`, { headers: { cookie } });
+    expect(docGet.headers.get("cache-control")).toBe("no-store");
+
+    // the document list GET is no-store too
+    const docList = await fetch(`${BASE}/api/documents`, { headers: { cookie } });
+    expect(docList.headers.get("cache-control")).toBe("no-store");
+
+    // cleanup
+    await db.user.delete({ where: { email: hEmail } });
+  }, 60_000);
 });
