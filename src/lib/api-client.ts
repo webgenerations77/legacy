@@ -47,6 +47,21 @@ export const api = {
     post<{ ok: true }>("/api/auth/vault/init", { salt, authVerifier }),
   vaultUnlock: (authVerifier: string) =>
     post<{ ok: true }>("/api/auth/vault/unlock", { authVerifier }),
+  accountStatus: async () => {
+    const res = await fetch("/api/account/status");
+    if (res.status === 401) return null;
+    if (!res.ok) throw new Error("We couldn't load your account.");
+    return res.json() as Promise<{ email: string; googleLinked: boolean; hasPassword: boolean }>;
+  },
+  pendingLink: async () => {
+    const res = await fetch("/api/auth/google/pending");
+    if (!res.ok) return { email: null as string | null };
+    return res.json() as Promise<{ email: string | null }>;
+  },
+  googleLink: (authVerifier: string) =>
+    post<{ ok: true }>("/api/auth/google/link", { authVerifier }),
+  googleUnlink: (authVerifier: string) =>
+    post<{ ok: true }>("/api/auth/google/unlink", { authVerifier }),
   listRecords: async (resource: string) => {
     const res = await fetch(`/api/${resource}`);
     if (!res.ok) throw new Error("We couldn't load your data.");
